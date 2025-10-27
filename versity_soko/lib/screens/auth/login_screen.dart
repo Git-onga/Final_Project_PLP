@@ -187,7 +187,7 @@ class _FormState extends State<_Form> {
               children: [
                 TextButton(
                     onPressed: () {
-                      Navigator.pushNamed(context, '/register');
+                      Navigator.pushNamed(context, '/reset');
                     },
                     child: const Text(
                       ' Forgot Password',

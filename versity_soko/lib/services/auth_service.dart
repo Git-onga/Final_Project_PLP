@@ -1,34 +1,80 @@
-import '../models/user_model.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+
+ValueNotifier<AuthService> authService = ValueNotifier(AuthService());
 
 class AuthService {
-  Future<UserModel> login(String email, String password) async {
+  final FirebaseAuth firebaseAuth = FirebaseAuth.instance;
+
+  User? get currentUser => firebaseAuth.currentUser;
+
+  Stream<User?> get getStateChanges => firebaseAuth.authStateChanges();
+
+  Future<UserCredential> login({
+    required String email, 
+    required String password}) 
+    async {
     // Simulate API call
-    await Future.delayed(const Duration(seconds: 2));
-    
-    // Replace with actual API implementation
-    return UserModel(
-      id: '1',
-      name: 'John Doe',
-      email: email,
-      university: 'University of Nairobi',
-    );
+    return await firebaseAuth.signInWithEmailAndPassword(email: email, password: password);
   }
 
-  Future<UserModel> register(String name, String email, String password, String university) async {
+  Future<UserCredential> createAccount({
+    required String name,
+    required String email, 
+    required String password,}) 
+    async {
     // Simulate API call
-    await Future.delayed(const Duration(seconds: 2));
-    
-    // Replace with actual API implementation
-    return UserModel(
-      id: '1',
-      name: name,
-      email: email,
-      university: university,
-    );
+    return await firebaseAuth.createUserWithEmailAndPassword(email: email, password: password);
   }
 
-  Future<void> logout() async {
-    // Simulate logout process
-    await Future.delayed(const Duration(milliseconds: 500));
+  Future<void> signOut() 
+    async {
+    // Simulate API call
+    await firebaseAuth.signOut();
   }
+
+  Future<void> resetPassword({
+    required String email}) 
+    async {
+    // Simulate API call
+    await firebaseAuth.sendPasswordResetEmail(email: email);
+  }
+
+  Future<void> updateUsername({
+    required String username}) 
+    async {
+    // Simulate API call
+    await currentUser!.updateDisplayName(username);
+  }
+
+  Future<void> updateEmail({
+    required String email}) 
+    async {
+    // Simulate API call
+    await currentUser!.updateDisplayName(email);
+  }
+
+  Future<void> deleteAccount({
+    required String email,
+    required String password}) 
+    async {
+    // Simulate API call
+    AuthCredential credential = EmailAuthProvider.credential(email: email, password: password);
+    await currentUser!.reauthenticateWithCredential(credential);
+    await currentUser!.delete();
+    await firebaseAuth.signOut();
+  }
+
+  Future<void> resetPasswordFromCurrentPassword({
+    required String currentPassword,
+    required String newPassword,
+    required String email}) 
+    async {
+    // Simulate API call
+    AuthCredential credential = EmailAuthProvider.credential(email: email, password: currentPassword);
+    await currentUser!.reauthenticateWithCredential(credential);
+    await currentUser!.updatePassword(newPassword);
+  }
+
+  
 }

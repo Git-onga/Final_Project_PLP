@@ -14,8 +14,16 @@ import 'screens/shop/shop_screen.dart';
 import 'screens/community/community_screen.dart';
 import 'screens/message/message_screen.dart';
 import 'screens/create/create_screen.dart';
+import 'screens/auth/reset_password.dart';
 
-void main() {
+// Firebase packages
+import 'package:firebase_core/firebase_core.dart'; 
+import 'firebase_options.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp( options: DefaultFirebaseOptions.currentPlatform, );
+  
   runApp(const MyApp());
 }
 
@@ -46,6 +54,7 @@ class MyApp extends StatelessWidget {
           '/community': (context) => const CommunityScreen(),
           '/message': (context) => const MessageScreen(),
           '/create': (context) => const CreateScreen(),
+          '/reset': (context) => const ResetPasswordScreen(),
         },
         debugShowCheckedModeBanner: false,
       ),

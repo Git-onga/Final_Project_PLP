@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-// import '../../providers/auth_provider.dart';
+import 'package:versity_soko/services/auth_service.dart';
+import '../../screens/profile/edit_profile_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -20,18 +20,6 @@ class ProfileScreen extends StatelessWidget {
         backgroundColor: Colors.white,
         elevation: 1,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.edit_outlined),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const EditProfileScreen(),
-                ),
-              );
-            },
-            tooltip: 'Edit Profile',
-          ),
           PopupMenuButton<String>(
             onSelected: (value) {
               switch (value) {
@@ -159,7 +147,7 @@ class ProfileScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'User Name',
+            authService.value.currentUser!.displayName ?? 'Username',
             style: const TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
@@ -168,7 +156,7 @@ class ProfileScreen extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-           'email@example.com',
+           authService.value.currentUser!.email ?? 'username@example.com',
             style: TextStyle(
               fontSize: 16,
               color: Colors.grey[600],
@@ -437,38 +425,6 @@ class ProfileScreen extends StatelessWidget {
           ],
         );
       },
-    );
-  }
-}
-
-// Edit Profile Screen (Basic Implementation)
-class EditProfileScreen extends StatelessWidget {
-  const EditProfileScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Edit Profile'),
-        actions: [
-          TextButton(
-            onPressed: () {
-              // Save profile changes
-              Navigator.pop(context);
-            },
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-      body: const Padding(
-        padding: EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            // Add form fields for editing profile
-            Text('Edit profile form goes here...'),
-          ],
-        ),
-      ),
     );
   }
 }

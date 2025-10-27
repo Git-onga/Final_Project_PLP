@@ -9,6 +9,7 @@ import '../home/notification_screen.dart';
 import '../../models/product_model.dart';
 import '../../models/event_model.dart';
 import '../home/event_details.dart';
+import 'package:versity_soko/services/auth_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -1185,7 +1186,7 @@ class _HomeHeadSectionState extends State<_HomeHeadSection> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        "Bildad",
+                        authService.value.currentUser!.displayName ?? 'Username',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,

@@ -1,25 +1,32 @@
+// auth_provider.dart
 import 'package:flutter/material.dart';
-import '../models/user_model.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
+import 'package:flutter/foundation.dart';
 
 class AuthProvider with ChangeNotifier {
   final AuthService _authService = AuthService();
-  
-  UserModel? _user;
+
+  User? _user; // Firebase User
   bool _isLoading = false;
   String? _error;
 
-  UserModel? get user => _user;
+  User? get user => _user;
   bool get isLoading => _isLoading;
   String? get error => _error;
 
+  /// LOGIN
   Future<bool> login(String email, String password) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      _user = await _authService.login(email, password);
+      UserCredential userCredential = await _authService.login(
+        email: email,
+        password: password,
+      );
+      _user = userCredential.user;
       _isLoading = false;
       notifyListeners();
       return true;
@@ -31,13 +38,24 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+  /// REGISTER / CREATE ACCOUNT
   Future<bool> register(String name, String email, String password, String university) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      _user = await _authService.register(name, email, password, university);
+      // Create Firebase user
+      UserCredential userCredential = await _authService.createAccount(
+        name: name.trim(),
+        email: email.trim(),
+        password: password.trim(),
+      );
+
+      // Update username in Firebase
+      await _authService.updateUsername(username: name.trim());
+
+      _user = userCredential.user;
       _isLoading = false;
       notifyListeners();
       return true;
@@ -49,30 +67,92 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  void logout() {
+  /// RESET PASSWORD
+  Future<bool> resetPassword(String email) async {
+    try {
+      await _authService.resetPassword(email: email);
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// UPDATE USERNAME
+  Future<bool> updateUsername(String username) async {
+    try {
+      await _authService.updateUsername(username: username);
+      _user = _authService.currentUser;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// UPDATE USERNAME
+  Future<bool> updateEmail(String email) async {
+    try {
+      await _authService.updateEmail(email: email);
+      email = email;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// SIGN OUT
+  Future<void> logout() async {
+    await _authService.signOut();
     _user = null;
-    _authService.logout();
     notifyListeners();
   }
 
+  /// DELETE ACCOUNT
+  Future<bool> deleteAccount(String email, String password) async {
+    try {
+      await _authService.deleteAccount(email: email, password: password);
+      _user = null;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// RESET PASSWORD (WITH CURRENT PASSWORD)
+  Future<bool> resetPasswordFromCurrentPassword({
+    required String currentPassword,
+    required String newPassword,
+    required String email,
+  }) async {
+    try {
+      await _authService.resetPasswordFromCurrentPassword(
+        currentPassword: currentPassword,
+        newPassword: newPassword,
+        email: email,
+      );
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// CLEAR ERRORS
   void clearError() {
     _error = null;
     notifyListeners();
   }
-  Future<void> updateUser(Map<String, dynamic> updatedUser) async {
-    try {
-      // Simulate API call
-      await Future.delayed(const Duration(seconds: 1));
-      
-      _user = null;
-      notifyListeners();
-      
-      // In real app, save to shared preferences or make API call
-      print('User updated: $_user');
-    } catch (e) {
-      print('Error updating user: $e');
-      rethrow;
-    }
-  }
 
+  
 }

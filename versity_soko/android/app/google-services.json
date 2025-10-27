@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "179094556335",
+    "project_id": "versity-app-backend",
+    "storage_bucket": "versity-app-backend.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:179094556335:android:3c822beb1dfd251b070e5a",
+        "android_client_info": {
+          "package_name": "com.example.versity_soko"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD1OEVHsN6ENtaht5yHxKyxCRb29_ncLT8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
