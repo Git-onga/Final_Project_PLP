@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../services/database_service.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -55,51 +56,82 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
   }
 
-  Future<void> _saveProfile() async { 
-    final authProvider = Provider.of<AuthProvider>(context, listen: false); 
-    final newName = _nameController.text.trim(); 
-    final newEmail = _emailController.text.trim();
-    if (newName.isEmpty) { 
-      ScaffoldMessenger.of(context).showSnackBar( 
-        const SnackBar( 
-          content: Text('Name cannot be empty.'), 
-          backgroundColor: Colors.red, 
-          behavior: SnackBarBehavior.floating, 
-        ), 
-      ); return; 
-    } 
-    if (newEmail.isEmpty) { 
-      ScaffoldMessenger.of(context).showSnackBar( 
-        const SnackBar( 
-          content: Text('Email cannot be empty.'), 
-          backgroundColor: Colors.red, 
-          behavior: SnackBarBehavior.floating, 
-        ), 
-      ); return; 
-    } 
-    setState(() => _isSaving = true); 
-    final success = await authProvider.updateUsername(newName);  
+  Future<void> _saveProfile() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final dbService = DatabaseService();
 
-    setState(() => _isSaving = false); 
-    if (success) { 
-      ScaffoldMessenger.of(context).showSnackBar( 
-        const SnackBar( 
-          content: Text('Profile updated successfully!'), 
-          backgroundColor: Colors.green, 
-          behavior: SnackBarBehavior.floating, 
-        ), 
-      ); Navigator.pop(context); }
-    else { 
-      ScaffoldMessenger.of(context).showSnackBar( 
-        SnackBar( 
-          content: Text(authProvider.error ?? 'Failed to update profile.'), 
-          backgroundColor: Colors.red, 
-          behavior: SnackBarBehavior.floating, 
-        ), 
-      ); 
-    } 
-    
+    final newName = _nameController.text.trim();
+    final newEmail = _emailController.text.trim();
+
+    if (newName.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Name cannot be empty.'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    if (newEmail.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Email cannot be empty.'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isSaving = true);
+
+    try {
+      // ✅ 1. Update the user's display name in Firebase Auth
+      final nameUpdated = await authProvider.updateUsername(newName);
+
+      // ✅ 2. Update the user's email in Firebase Auth
+      // final emailUpdated = await authProvider.updateEmail(newEmail);
+
+      // ✅ 3. Save the updated data (and image if provided) in Firestore
+      await dbService.saveUserProfile(
+        name: newName,
+        imageFile: _imageFile, // can be null if user didn't pick one
+      );
+
+      setState(() => _isSaving = false);
+
+      if (nameUpdated /*&& emailUpdated*/) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Profile updated successfully!'),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        Navigator.pop(context);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(authProvider.error ?? 'Some updates failed.'),
+            backgroundColor: Colors.orange,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() => _isSaving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: ${e.toString()}'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
+
 
   @override
   Widget build(BuildContext context) {

@@ -40,26 +40,26 @@ class _ShopScreenState extends State<ShopScreen> {
       )
 			
 			),
-      bottomNavigationBar: CustomBottomNavBar(
-				currentIndex: 0,
-				onTap: (index) {
-				switch (index) {
-					case 0:
-					Navigator.pushNamed(context, '/home');
-					case 1:
-					Navigator.pushNamed(context, '/shops');
-					break;
-					case 2:
-					Navigator.pushNamed(context, '/create');
-					break;
-					case 3:
-					Navigator.pushNamed(context, '/community');
-					break;
-					case 4:
-					Navigator.pushNamed(context, '/message');
-				}
-				},
-			),
+      // bottomNavigationBar: CustomBottomNavBar(
+			// 	currentIndex: 0,
+			// 	onTap: (index) {
+			// 	switch (index) {
+			// 		case 0:
+			// 		Navigator.pushNamed(context, '/home');
+			// 		case 1:
+			// 		Navigator.pushNamed(context, '/shops');
+			// 		break;
+			// 		case 2:
+			// 		Navigator.pushNamed(context, '/create');
+			// 		break;
+			// 		case 3:
+			// 		Navigator.pushNamed(context, '/community');
+			// 		break;
+			// 		case 4:
+			// 		Navigator.pushNamed(context, '/message');
+			// 	}
+			// 	},
+			// ),
 		);
 	}
 

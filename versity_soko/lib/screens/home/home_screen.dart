@@ -10,6 +10,7 @@ import '../../models/product_model.dart';
 import '../../models/event_model.dart';
 import '../home/event_details.dart';
 import 'package:versity_soko/services/auth_service.dart';
+import 'package:firebase_database/firebase_database.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -19,17 +20,52 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  final DatabaseReference eventsRef = FirebaseDatabase.instance.ref().child('events');
+  List<EventModel> events = [];
+  bool _loading = true;
+
 	@override
 	void initState() {
 		super.initState();
+    _fetchEvents();
 		WidgetsBinding.instance.addPostFrameCallback((_) {
-		Provider.of<ProductProvider>(context, listen: false).loadProducts();
+		  Provider.of<ProductProvider>(context, listen: false).loadProducts();
 		});
 	}
+
+  Future<void> _fetchEvents() async {
+    try {
+      final snapshot = await eventsRef.get();
+      if (snapshot.exists) {
+        final data = snapshot.value as Map<dynamic, dynamic>;
+        final loadedEvents = data.entries.map((e) {
+          return EventModel.fromMap(e.key, Map<String, dynamic>.from(e.value));
+        }).toList();
+
+        setState(() {
+          events = loadedEvents;
+          _loading = false;
+        });
+      } else {
+        setState(() {
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      print('Error fetching events: $e');
+      setState(() {
+        _loading = false;
+      });
+    }
+  }
 
 	@override
 	Widget build(BuildContext context) {
 		final productProvider = Provider.of<ProductProvider>(context);
+
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
 		return Scaffold(
         
@@ -50,51 +86,7 @@ class _HomeScreenState extends State<HomeScreen> {
               OffersBanner(),
               // Event Section
               SizedBox(height: 25,),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                
-                children: [
-                  Text(
-                    'This Week',
-                    style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey[800],
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  SizedBox( 
-                    height: 100,
-                    child:  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    // padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    child: Row(
-                      children: [
-                        _buildCompactCard(
-                          title: 'Somesha Comerade',
-                          subtitle: 'Support a student in need',
-                          color: Colors.green,
-                        ),
-                        const SizedBox(width: 8),
-                        _buildCompactCard(
-                          title: 'Visit nell Now',
-                          subtitle: 'Charity Spirit Deals',
-                          color: Colors.purple,
-                        ),
-                        const SizedBox(width: 8),
-                        _buildCompactCard(
-                          title: 'Student Aid',
-                          subtitle: 'Education support',
-                          color: Colors.blue,
-                        ),
-                      ],
-                    ),
-                  ),
-                  )
-                ],
-              ),
-              SizedBox(height: 25,),
-              // Following section
+               // Following section
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -168,11 +160,23 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
               SizedBox(height: 25,),
+              // Events
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Section title
                   // const SizedBox(height: 16),
+                  Text(
+                    'This Week',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey[800],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildEventCard(events),
+                  const SizedBox(height: 16),
                   Text(
                     'Recommended Products',
                     style: TextStyle(
@@ -185,16 +189,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   
                   // Masonry-style grid with vertical spans
                   _buildRegularProductCard(dummyProducts),
-                  Text(
-                    'Events',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey[800],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildEventCard(dummyEvents),
+                  
                     
                 ],
               )
@@ -202,372 +197,233 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ) ,
-        bottomNavigationBar: CustomBottomNavBar(
-          currentIndex: 0,
-          onTap: (index) {
-          switch (index) {
-            case 0:
-            Navigator.pushNamed(context, '/home');
-            case 1:
-            Navigator.pushNamed(context, '/shops');
-            break;
-            case 2:
-            Navigator.pushNamed(context, '/create');
-            break;
-            case 3:
-            Navigator.pushNamed(context, '/community');
-            break;
-            case 4:
-            Navigator.pushNamed(context, '/message');
-          }
-          },
-        ),
+      
     );
 	}
-	Widget _buildCompactCard({
-			required String title,
-			required String subtitle,
-			required Color color,
-		}) {
-			return Container(
-			width: 220,
-			padding: const EdgeInsets.all(12),
-			decoration: BoxDecoration(
-				color: color.withOpacity(0.1),
-				borderRadius: BorderRadius.circular(12),
-				border: Border.all(color: color.withOpacity(0.3)),
-			),
-			child: Column(
-				crossAxisAlignment: CrossAxisAlignment.start,
-				children: [
-				Text(
-					title,
-					style: TextStyle(
-					fontSize: 14,
-					fontWeight: FontWeight.w600,
-					color: color,
-					),
-					maxLines: 2,
-				),
-				const SizedBox(height: 4),
-				Text(
-					subtitle,
-					style: TextStyle(
-					fontSize: 12,
-					color: Colors.grey[700],
-					),
-					maxLines: 2,
-				),
-				],
-			),
-		);
-	}
-
+	
   Widget _buildEventCard(List<EventModel> events) {
-    return Column(
-      children: events.map((event) {
-        return GestureDetector(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => EventDetailScreen(event: event),
+    if (events.isEmpty) {
+      return const Center(child: Text("No events available."));
+    }
+    return SizedBox(
+      height: 320, // overall height for each card row
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: events.length,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        itemBuilder: (context, index) {
+          final event = events[index];
+
+          return GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => EventDetailScreen(event: event),
+                ),
+              );
+            },
+            child: Container(
+              width: 250, // card width for horizontal layout
+              margin: const EdgeInsets.only(right: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.15),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-            );
-          },
-          child: Container(
-            margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.1),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Image with overlay
-                Stack(
-                  children: [
-                    ClipRRect(
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                      child: Image.network(
-                        event.imageUrl,
-                        fit: BoxFit.cover,
-                        width: double.infinity,
-                        height: 180,
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return Container(
-                            height: 180,
-                            color: Colors.grey[200],
-                            child: const Center(child: CircularProgressIndicator()),
-                          );
-                        },
-                      ),
-                    ),
-                    
-                    // Gradient overlay
-                    Container(
-                      height: 180,
-                      decoration: BoxDecoration(
-                        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.transparent,
-                            Colors.black.withOpacity(0.3),
-                          ],
-                        ),
-                      ),
-                    ),
-                    
-                    // Free badge
-                    Positioned(
-                      top: 12,
-                      left: 12,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: event.isFree ? Colors.green : Colors.orange,
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Text(
-                          event.isFree ? 'FREE' : 'PAID',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                    
-                    // Attendees count
-                    Positioned(
-                      top: 12,
-                      right: 12,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.7),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.people, size: 12, color: Colors.white),
-                            const SizedBox(width: 4),
-                            Text(
-                              '${event.attendees}',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    
-                    // Date badge at bottom
-                    Positioned(
-                      bottom: 12,
-                      left: 12,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          event.date,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                
-                // Content section
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Image Section
+                  Stack(
                     children: [
-                      // Title
-                      Text(
-                        event.title,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          height: 1.3,
+                      ClipRRect(
+                        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                        child: Image.network(
+                          event.imageUrl,
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          height: 160,
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Container(
+                              height: 140,
+                              color: Colors.grey[200],
+                              child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                            );
+                          },
                         ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
                       ),
-                      
-                      const SizedBox(height: 8),
-                      
-                      // Organizer
-                      Row(
-                        children: [
-                          Icon(Icons.person_outline, size: 14, color: Colors.grey[600]),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              event.organizer,
-                              style: TextStyle(
-                                color: Colors.grey[600],
-                                fontSize: 13,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                      Container(
+                        height: 140,
+                        decoration: BoxDecoration(
+                          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.transparent,
+                              Colors.black.withOpacity(0.3),
+                            ],
                           ),
-                        ],
-                      ),
-                      
-                      const SizedBox(height: 6),
-                      
-                      // Location and Time
-                      Row(
-                        children: [
-                          Icon(Icons.location_on_outlined, size: 14, color: Colors.grey[600]),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              event.location,
-                              style: TextStyle(
-                                color: Colors.grey[600],
-                                fontSize: 13,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                      
-                      const SizedBox(height: 6),
-                      
-                      Row(
-                        children: [
-                          Icon(Icons.access_time, size: 14, color: Colors.grey[600]),
-                          const SizedBox(width: 6),
-                          Text(
-                            event.time,
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                              fontSize: 13,
-                            ),
-                          ),
-                        ],
-                      ),
-                      
-                      const SizedBox(height: 12),
-                      
-                      // Description
-                      Text(
-                        event.description,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey[700],
-                          height: 1.4,
                         ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
                       ),
-                      
-                      const SizedBox(height: 16),
-                      
-                      // Categories and Action Button
-                      Row(
-                        children: [
-                          // Categories
-                          Expanded(
-                            child: Wrap(
-                              spacing: 6,
-                              runSpacing: 6,
-                              children: event.categories.take(2).map((category) {
-                                return Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: Colors.purple[50],
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Text(
-                                    category,
-                                    style: TextStyle(
-                                      color: Colors.purple[700],
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                );
-                              }).toList(),
+                      Positioned(
+                        top: 10,
+                        left: 10,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: event.isFree ? Colors.green : Colors.orange,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            event.isFree ? 'FREE' : 'PAID',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
-                          
-                          const SizedBox(width: 12),
-                          
-                          // Action Button
-                          ElevatedButton(
-                            onPressed: () {
-                              if (event.ticketLink != null) {
-                                // Open ticket link or show booking dialog
-                                _showBookingDialog(event);
-                              } else {
-                                _showInterestDialog(event);
-                              }
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: event.isFree ? Colors.green : Colors.blue,
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                              elevation: 0,
-                            ),
-                            child: Text(
-                              event.isFree ? "Join Event" : "Get Tickets",
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                              ),
+                        ),
+                      ),
+                      Positioned(
+                        bottom: 10,
+                        left: 10,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.9),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            event.date,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black,
                             ),
                           ),
-                        ],
+                        ),
                       ),
                     ],
                   ),
-                ),
-              ],
+
+                  // Text Section
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(10),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            event.title,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Icon(Icons.location_on_outlined, size: 12, color: Colors.grey[600]),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  event.location,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey[600],
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Icon(Icons.access_time, size: 12, color: Colors.grey[600]),
+                              const SizedBox(width: 4),
+                              Text(
+                                event.time,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const Spacer(),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Wrap(
+                                  spacing: 4,
+                                  children: event.categories.take(1).map((cat) {
+                                    return Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                                      decoration: BoxDecoration(
+                                        color: Colors.purple[50],
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        cat,
+                                        style: TextStyle(
+                                          color: Colors.purple[700],
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
+                              ),
+                              ElevatedButton(
+                                onPressed: () {
+                                  if (event.ticketLink != null) {
+                                    _showBookingDialog(event);
+                                  } else {
+                                    _showInterestDialog(event);
+                                  }
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: event.isFree ? Colors.green : Colors.blue,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                                child: Text(
+                                  event.isFree ? 'Join' : 'Tickets',
+                                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        );
-      }).toList(),
+          );
+        },
+      ),
     );
   }
+
 
   // Helper methods for dialogs
   void _showBookingDialog(EventModel event) {
@@ -1014,134 +870,6 @@ class ShopStoryItem extends StatelessWidget {
 	}
 }
 
-class CustomBottomNavBar extends StatefulWidget {
-  final int currentIndex;
-  final Function(int) onTap;
-
-  const CustomBottomNavBar({
-    super.key,
-    required this.currentIndex,
-    required this.onTap,
-  });
-
-  @override
-  State<CustomBottomNavBar> createState() => _CustomBottomNavBarState();
-}
-
-class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
-	@override
-	Widget build(BuildContext context) {
-		return Container(
-		decoration: BoxDecoration(
-			color: Colors.white,
-			border: Border(
-			top: BorderSide(
-				color: Colors.grey[300]!,
-				width: 1,
-			),
-			),
-		),
-		child: SafeArea(
-			child: Padding(
-			padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
-			child: Row(
-				mainAxisAlignment: MainAxisAlignment.spaceAround,
-				children: [
-				_buildNavItem(
-					icon: Icons.home,
-					activeIcon: Icons.home,
-					label: 'Home',
-					index: 0,
-				),
-				_buildNavItem(
-					icon: Icons.shop,
-					activeIcon: Icons.shop,
-					label: 'Shop',
-					index: 1,
-				),
-				_buildNavItem(
-					icon: Icons.add_circle_outline,
-					activeIcon: Icons.add_circle,
-					label: 'Create',
-					index: 2,
-					isCenter: true,
-				),
-				_buildNavItem(
-					icon: Icons.group,
-					activeIcon: Icons.group,
-					label: 'Community',
-					index: 3,
-				),
-				_buildNavItem(
-					icon: Icons.message,
-					activeIcon: Icons.message,
-					label: 'Hub',
-					index: 4,
-				),
-				],
-			),
-			),
-		),
-		);
-	}
-
-	Widget _buildNavItem({
-		required IconData icon,
-		required IconData activeIcon,
-		required String label,
-		required int index,
-		bool isCenter = false,
-	}) {
-		final isActive = widget.currentIndex == index;
-		
-		return GestureDetector(
-		onTap: () => widget.onTap(index),
-		child: Container(
-			padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
-			decoration: isCenter
-				? BoxDecoration(
-					gradient: const LinearGradient(
-					colors: [
-						Color(0xFF667EEA),
-						Color(0xFF764BA2),
-					],
-					begin: Alignment.topLeft,
-					end: Alignment.bottomRight,
-					),
-					borderRadius: BorderRadius.circular(20),
-				)
-				: null,
-			child: Column(
-			mainAxisSize: MainAxisSize.min,
-			children: [
-				Icon(
-				isActive ? activeIcon : icon,
-				color: isCenter 
-					? Colors.white 
-					: isActive 
-						? Colors.blue[700] 
-						: Colors.grey[600],
-				size: isCenter ? 24 : 22,
-				),
-				const SizedBox(height: 4),
-				Text(
-				label,
-				style: TextStyle(
-					fontSize: 10,
-					color: isCenter 
-						? Colors.white 
-						: isActive 
-							? Colors.blue[700] 
-							: Colors.grey[600],
-					fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
-				),
-				),
-			],
-			),
-		),
-		);
-	}
-}
 
 class _HomeHeadSection extends StatefulWidget {
   const _HomeHeadSection();
@@ -1269,20 +997,21 @@ class OffersBanner extends StatelessWidget {
           titleLine2: 'New Deals!',
           description: 'Get up to 50% off on study essentials',
           image: 'https://picsum.photos/200/150?random=10',
+          gradientColors:[ Color(0xFF764BA2),Color(0xFF667EEA),]
         ),
         _buildBannerCard(
           titleLine1: 'Fresh Arrivals,',
           titleLine2: 'Hot Prices!',
           description: 'Shop the latest student gear now',
           image: 'https://picsum.photos/200/150?random=11',
-          gradientColors: [Color(0xFF00C6FB), Color(0xFF005BEA)],
+          gradientColors: [Color(0xFF47F347), Color(0xFF005BEA)],
         ),
         _buildBannerCard(
           titleLine1: 'Limited Time,',
           titleLine2: 'Exclusive Offers!',
           description: 'Hurry before stocks run out!',
           image: 'https://picsum.photos/200/150?random=12',
-          gradientColors: [Color.fromARGB(255, 99, 180, 24), Color.fromARGB(255, 71, 243, 71)],
+          gradientColors: [Color(0xFF764BA2),Color(0xFF72DE0D) ],
         ),
       ];
 

@@ -171,28 +171,28 @@ class _CommunityScreenState extends State<CommunityScreen> {
           ),
         ),
       ),
-      bottomNavigationBar: CustomBottomNavBar(
-        currentIndex: 3,
-        onTap: (index) {
-          switch (index) {
-            case 0:
-              Navigator.pushNamed(context, '/home');
-              break;
-            case 1:
-              Navigator.pushNamed(context, '/shops');
-              break;
-            case 2:
-              Navigator.pushNamed(context, '/create');
-              break;
-            case 3:
-              Navigator.pushNamed(context, '/community');
-              break;
-            case 4:
-              Navigator.pushNamed(context, '/message');
-              break;
-          }
-        },
-      ),
+      // bottomNavigationBar: CustomBottomNavBar(
+      //   currentIndex: 3,
+      //   onTap: (index) {
+      //     switch (index) {
+      //       case 0:
+      //         Navigator.pushNamed(context, '/home');
+      //         break;
+      //       case 1:
+      //         Navigator.pushNamed(context, '/shops');
+      //         break;
+      //       case 2:
+      //         Navigator.pushNamed(context, '/create');
+      //         break;
+      //       case 3:
+      //         Navigator.pushNamed(context, '/community');
+      //         break;
+      //       case 4:
+      //         Navigator.pushNamed(context, '/message');
+      //         break;
+      //     }
+      //   },
+      // ),
     );
   }
 

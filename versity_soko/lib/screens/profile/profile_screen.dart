@@ -122,13 +122,13 @@ class ProfileScreen extends StatelessWidget {
                 ),
                 child: ClipOval(
                   child:Image.network(
-                          'https://picsum.photos/400/600?random=20',
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return const Icon(Icons.person, size: 40, color: Colors.grey);
-                          },
-                        )
-                      // : const Icon(Icons.person, size: 40, color: Colors.grey),
+                    'https://picsum.photos/400/600?random=20',
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return const Icon(Icons.person, size: 40, color: Colors.grey);
+                    },
+                  )
+                // : const Icon(Icons.person, size: 40, color: Colors.grey),
                 ),
               ),
               Container(

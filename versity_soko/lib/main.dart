@@ -9,7 +9,7 @@ import 'providers/product_provider.dart';
 // Screens
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
-import 'screens/home/home_screen.dart';
+import 'wrapper.dart';
 import 'screens/shop/shop_screen.dart';
 import 'screens/community/community_screen.dart';
 import 'screens/message/message_screen.dart';
@@ -48,9 +48,8 @@ class MyApp extends StatelessWidget {
         routes: {
           '/login': (context) => const LoginScreen(),
           '/register': (context) => const RegisterScreen(),
-          '/home': (context) => const HomeScreen(),
+          '/home': (context) => const MainWrapper(),
           '/shops': (context) => const ShopScreen(),
-          // '/shop-detail': (context) => const ShopDetailScreen(),
           '/community': (context) => const CommunityScreen(),
           '/message': (context) => const MessageScreen(),
           '/create': (context) => const CreateScreen(),
