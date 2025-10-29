@@ -1,49 +1,88 @@
-import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/shop_model.dart';
 
-class ShopProvider with ChangeNotifier {
-  List<ShopModel> _shops = [];
-  bool _isLoading = false;
-  String? _error;
+class ShopProvider {
+  final _storage = FirebaseStorage.instance;
+  final _auth = FirebaseAuth.instance;
 
-  List<ShopModel> get shops => _shops;
-  bool get isLoading => _isLoading;
-  String? get error => _error;
+  /// ✅ Create a new shop (only one per user)
+  Future<void> createShop({
+    required String name,
+    required String description,
+    required String category,
+    required String email,
+    required String phone,
+    required bool delivery,
+  }) async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception("User not logged in");
 
-  Future<void> loadShops() async {
-    _isLoading = true;
-    notifyListeners();
+    final userId = user.uid;
+    final shopFileRef = _storage.ref().child('shops/$userId.json');
 
-    // Simulate API call
-    await Future.delayed(const Duration(seconds: 2));
-    
-    _shops = [
-      ShopModel(
-        id: '1',
-        name: 'Campus Store',
-        description: 'Your one-stop campus shop',
-        ownerId: '1',
-        university: 'University of Nairobi',
-        rating: 4.5,
-        reviewCount: 120,
-      ),
-      ShopModel(
-        id: '2',
-        name: 'Tech Hub',
-        description: 'Electronics and gadgets',
-        ownerId: '2',
-        university: 'Kenyatta University',
-        rating: 4.2,
-        reviewCount: 85,
-      ),
-    ];
-    
-    _isLoading = false;
-    notifyListeners();
+    try {
+      // 1️⃣ Check if shop already exists
+      await shopFileRef.getMetadata();
+      throw Exception("You already own a shop.");
+    } catch (e) {
+      // File doesn't exist → continue only if it's a not-found error
+      if (e is! FirebaseException || e.code != 'object-not-found') {
+        rethrow;
+      }
+    }
+
+    // 2️⃣ Create new shop data
+    final shop = ShopModel(
+      id: userId,
+      name: name,
+      description: description,
+      category: category,
+      email: email,
+      phone: phone,
+      delivery: delivery,
+      userId: userId,
+      createdAt: DateTime.now(),
+    );
+
+    // Convert to JSON string
+    final jsonData = jsonEncode(shop.toJson());
+
+    // 3️⃣ Upload JSON to Firebase Storage
+    await shopFileRef.putString(
+      jsonData,
+      metadata: SettableMetadata(contentType: 'application/json'),
+    );
   }
 
-  void addShop(ShopModel shop) {
-    _shops.add(shop);
-    notifyListeners();
+  /// 🔍 Fetch the current user's shop
+  Future<ShopModel?> fetchUserShop() async {
+    final user = _auth.currentUser;
+    if (user == null) return null;
+
+    final shopFileRef = _storage.ref().child('shops/${user.uid}.json');
+
+    try {
+      final data = await shopFileRef.getData();
+      if (data == null) return null;
+
+      final jsonStr = utf8.decode(data);
+      final map = jsonDecode(jsonStr) as Map<String, dynamic>;
+
+      return ShopModel.fromMap(map['id'] ?? user.uid, map); // Fixed: removed the incorrect cast to String
+    } catch (e) {
+      // No file found or other error
+      return null;
+    }
+  }
+
+  /// 🚫 Delete user's shop
+  Future<void> deleteUserShop() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    final shopFileRef = _storage.ref().child('shops/${user.uid}.json');
+    await shopFileRef.delete();
   }
 }

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../providers/kyosk_provider.dart';
-import '../home/home_screen.dart';
 
 class KioskScreen extends StatefulWidget {
   const KioskScreen({super.key});

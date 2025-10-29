@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:versity_soko/screens/create/kiosk_screen.dart';
-import '../home/home_screen.dart';
+import '../../providers/shop_provider.dart';
 
 class CreateScreen extends StatefulWidget {
   const CreateScreen({super.key});
@@ -14,15 +14,68 @@ class _CreateBusinessScreen extends State<CreateScreen> {
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
+  final _provider = ShopProvider();
+  
+  String name = '', desc = '', category = '', email = '', phone = '';
+  bool delivery = false;
+  bool isLoading = false;
+
+  void _handleSubmit() async {
+    if (_businessNameController.text.isEmpty) {
+      _showSnackBar('Please enter your business name');
+      return;
+    }
+
+    if (_phoneController.text.isEmpty) {
+      _showSnackBar('Please enter your phone number');
+      return;
+    }
+
+    if (_emailController.text.isEmpty) {
+      _showSnackBar('Please enter your email address');
+      return;
+    }
+
+    if (_selectedCategory == null) {
+      _showSnackBar('Please select a business category');
+      return;
+    }
+
+    setState(() => isLoading = true);
+
+    try {
+      await _provider.createShop(
+        name: _businessNameController.text,
+        description: _descriptionController.text,
+        category: _selectedCategory!,
+        email: _emailController.text,
+        phone: _phoneController.text,
+        delivery: _isToggled,
+      );
+
+      _showSnackBar("✅ Shop created successfully");
+
+      // Navigate to kiosk
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const KioskScreen()),
+      );
+    } catch (e) {
+      _showSnackBar("❌ Error creating shop: $e");
+    } finally {
+      setState(() => isLoading = false);
+    }
+  }
+
   bool _isToggled = false;
   String? _selectedCategory;
   
   final List<String> _categories = [
-    'Restaurant',
-    'Retail Store',
+    'Food & Drinks',
+    'Cloth Store',
     'Service Provider',
-    'Healthcare',
-    'Education',
+    'Accessories',
+    'Turtor',
     'Technology',
     'Other'
   ];
@@ -80,28 +133,6 @@ class _CreateBusinessScreen extends State<CreateScreen> {
           ],
         ),
       ),
-      // bottomNavigationBar: CustomBottomNavBar(
-      //   currentIndex: 0,
-      //   onTap: (index) {
-      //     switch (index) {
-      //       case 0:
-      //         Navigator.pushNamed(context, '/home');
-      //         break;
-      //       case 1:
-      //         Navigator.pushNamed(context, '/shops');
-      //         break;
-      //       case 2:
-      //         Navigator.pushNamed(context, '/create');
-      //         break;
-      //       case 3:
-      //         Navigator.pushNamed(context, '/community');
-      //         break;
-      //       case 4:
-      //         Navigator.pushNamed(context, '/message');
-      //         break;
-      //     }
-      //   },
-      // ),
     );
   }
 
@@ -489,7 +520,7 @@ class _CreateBusinessScreen extends State<CreateScreen> {
       width: double.infinity,
       height: 56,
       child: ElevatedButton(
-        onPressed: _createBusinessProfile,
+        onPressed: _handleSubmit,
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.blue,
           foregroundColor: Colors.white,

@@ -260,28 +260,28 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> with SingleTickerPr
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        const Icon(Icons.star, size: 16, color: Colors.amber),
-                        const SizedBox(width: 4),
-                        Text(
-                          widget.shop.rating.toString(),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          '(${widget.shop.reviewCount} reviews)',
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
+                    // Row(
+                    //   children: [
+                    //     const Icon(Icons.star, size: 16, color: Colors.amber),
+                    //     const SizedBox(width: 4),
+                    //     Text(
+                    //       widget.shop.rating.toString(),
+                    //       style: const TextStyle(
+                    //         color: Colors.white,
+                    //         fontSize: 14,
+                    //         fontWeight: FontWeight.w500,
+                    //       ),
+                    //     ),
+                    //     const SizedBox(width: 8),
+                    //     Text(
+                    //       '(${widget.shop.reviewCount} reviews)',
+                    //       style: const TextStyle(
+                    //         color: Colors.white70,
+                    //         fontSize: 12,
+                    //       ),
+                    //     ),
+                    //   ],
+                    // ),
                   ],
                 ),
               ),
@@ -342,7 +342,7 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> with SingleTickerPr
               _buildStatItem('Followers', ShopHelper.getFollowerCount(widget.shop)),
               _buildStatItem('Products', _shopDetails['productCount']),
               _buildStatItem('Orders', _shopDetails['orderCount']),
-              _buildStatItem('Rating', widget.shop.rating.toStringAsFixed(1)),
+              // _buildStatItem('Rating', widget.shop.rating.toStringAsFixed(1)),
             ],
           ),
 
@@ -590,10 +590,10 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> with SingleTickerPr
             ShopHelper.getTags(widget.shop).join(', '),
           ),
           const SizedBox(height: 24),
-          _buildAboutSection(
-            'University',
-            widget.shop.university,
-          ),
+          // _buildAboutSection(
+          //   'University',
+          //   widget.shop.university,
+          // ),
         ],
       ),
     );

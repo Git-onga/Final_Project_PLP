@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../home/home_screen.dart';
-// import '../widgets/custom_bottom_nav_bar.dart';
 import '../../widgets/shimmer_loader.dart';
 
 class CommunityScreen extends StatefulWidget {
