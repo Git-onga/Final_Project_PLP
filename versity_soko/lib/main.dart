@@ -49,7 +49,7 @@ class MyApp extends StatelessWidget {
           '/login': (context) => const LoginScreen(),
           '/register': (context) => const RegisterScreen(),
           '/home': (context) => const MainWrapper(),
-          '/shops': (context) => const ShopScreen(),
+          '/shops': (context) => const ShopScreen(shopId: ''),
           '/community': (context) => const CommunityScreen(),
           '/message': (context) => const MessageScreen(),
           '/create': (context) => const CreateScreen(),

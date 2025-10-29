@@ -20,6 +20,21 @@ class ShopModel {
     required DateTime createdAt,
   });
 
+  /// Convert JSON (from Firebase) to ShopModel
+  factory ShopModel.fromJson(Map<String, dynamic> json) {
+    return ShopModel(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      description: json['description'] as String,
+      category: json['category'] as String,
+      email: json['email'] as String,
+      phone: json['phone'] as String,
+      delivery: json['delivery'] as bool,
+      userId: json['userId'] as String,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+    );
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,

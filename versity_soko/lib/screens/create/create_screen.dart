@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:versity_soko/screens/create/kiosk_screen.dart';
 import '../../providers/shop_provider.dart';
+import 'package:firebase_database/firebase_database.dart';
+
 
 class CreateScreen extends StatefulWidget {
   const CreateScreen({super.key});
@@ -15,7 +17,8 @@ class _CreateBusinessScreen extends State<CreateScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   final _provider = ShopProvider();
-  
+  final database = FirebaseDatabase.instance.ref();
+
   String name = '', desc = '', category = '', email = '', phone = '';
   bool delivery = false;
   bool isLoading = false;
@@ -516,11 +519,24 @@ class _CreateBusinessScreen extends State<CreateScreen> {
   }
 
   Widget _buildCreateProfileButton() {
+    final shopRef = database.child('shops');
+
     return SizedBox(
       width: double.infinity,
       height: 56,
       child: ElevatedButton(
-        onPressed: _handleSubmit,
+        onPressed:(){
+          print(_businessNameController.text);  // ✅ not _businessNameController
+          print(_emailController.text);
+          print(_phoneController.text);
+          shopRef.set({
+            'name': _businessNameController.text,
+            'email': _emailController.text,
+            'phone': _phoneController.text,
+            'category': _selectedCategory,
+            'delivery': _isToggled,
+          });
+        },
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.blue,
           foregroundColor: Colors.white,

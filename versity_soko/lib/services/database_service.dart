@@ -8,7 +8,7 @@ class DatabaseService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseDatabase _database = FirebaseDatabase.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
-  final DatabaseReference _dbRef = FirebaseDatabase.instance.ref().child('events');
+  final DatabaseReference _eventsDbRef = FirebaseDatabase.instance.ref().child('events');
 
   /// Save or update user profile info (name + image)
   Future<void> saveUserProfile({
@@ -66,9 +66,9 @@ class DatabaseService {
   }
 
   Future<List<EventModel>> fetchEvents() async {
-    final snapshot = await _dbRef.get();
+    final snapshot = await _eventsDbRef.get();
 
-    print("Database path: ${_dbRef.path}");
+    print("Database path: ${_eventsDbRef.path}");
 
     if (snapshot.exists && snapshot.value != null) {
       final Map data = snapshot.value as Map;

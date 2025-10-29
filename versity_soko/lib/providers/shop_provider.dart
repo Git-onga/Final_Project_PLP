@@ -1,11 +1,10 @@
-import 'dart:convert';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
 import '../models/shop_model.dart';
 
 class ShopProvider {
-  final _storage = FirebaseStorage.instance;
   final _auth = FirebaseAuth.instance;
+  final _database = FirebaseDatabase.instance.ref(); // Root reference
 
   /// ✅ Create a new shop (only one per user)
   Future<void> createShop({
@@ -20,17 +19,12 @@ class ShopProvider {
     if (user == null) throw Exception("User not logged in");
 
     final userId = user.uid;
-    final shopFileRef = _storage.ref().child('shops/$userId.json');
+    final shopRef = _database.child('shops/$userId');
 
-    try {
-      // 1️⃣ Check if shop already exists
-      await shopFileRef.getMetadata();
+    // 1️⃣ Check if the user already owns a shop
+    final existingShop = await shopRef.get();
+    if (existingShop.exists) {
       throw Exception("You already own a shop.");
-    } catch (e) {
-      // File doesn't exist → continue only if it's a not-found error
-      if (e is! FirebaseException || e.code != 'object-not-found') {
-        rethrow;
-      }
     }
 
     // 2️⃣ Create new shop data
@@ -46,14 +40,8 @@ class ShopProvider {
       createdAt: DateTime.now(),
     );
 
-    // Convert to JSON string
-    final jsonData = jsonEncode(shop.toJson());
-
-    // 3️⃣ Upload JSON to Firebase Storage
-    await shopFileRef.putString(
-      jsonData,
-      metadata: SettableMetadata(contentType: 'application/json'),
-    );
+    // 3️⃣ Save the shop data to Realtime Database
+    await shopRef.set(shop.toJson());
   }
 
   /// 🔍 Fetch the current user's shop
@@ -61,20 +49,13 @@ class ShopProvider {
     final user = _auth.currentUser;
     if (user == null) return null;
 
-    final shopFileRef = _storage.ref().child('shops/${user.uid}.json');
+    final shopRef = _database.child('shops/${user.uid}');
+    final snapshot = await shopRef.get();
 
-    try {
-      final data = await shopFileRef.getData();
-      if (data == null) return null;
+    if (!snapshot.exists) return null;
 
-      final jsonStr = utf8.decode(data);
-      final map = jsonDecode(jsonStr) as Map<String, dynamic>;
-
-      return ShopModel.fromMap(map['id'] ?? user.uid, map); // Fixed: removed the incorrect cast to String
-    } catch (e) {
-      // No file found or other error
-      return null;
-    }
+    final map = Map<String, dynamic>.from(snapshot.value as Map);
+    return ShopModel.fromMap(snapshot.key!, map);
   }
 
   /// 🚫 Delete user's shop
@@ -82,7 +63,7 @@ class ShopProvider {
     final user = _auth.currentUser;
     if (user == null) return;
 
-    final shopFileRef = _storage.ref().child('shops/${user.uid}.json');
-    await shopFileRef.delete();
+    final shopRef = _database.child('shops/${user.uid}');
+    await shopRef.remove();
   }
 }

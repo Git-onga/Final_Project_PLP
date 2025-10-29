@@ -20,7 +20,7 @@ class _MainWrapperState extends State<MainWrapper> {
     HomeScreen(),
     CommunityScreen(),
     CreateScreen(),
-    ShopScreen(),
+    ShopScreen(shopId: '',),
     MessageScreen(),
   ];
 

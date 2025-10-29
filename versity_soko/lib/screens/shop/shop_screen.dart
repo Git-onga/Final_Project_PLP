@@ -1,19 +1,39 @@
 import 'package:flutter/material.dart';
 import 'package:versity_soko/models/shop_model.dart';
 import 'package:versity_soko/screens/shop/cart_screen.dart';
-import '../home/home_screen.dart';
-import '../shop/shop_detail_screen.dart';
+import '../../services/retrive_shop_details.dart';
 
 class ShopScreen extends StatefulWidget {
-  const ShopScreen({super.key});
+  final String shopId; // Pass the shop ID when navigating to this screen
+  const ShopScreen({super.key, required this.shopId});
 
   @override
   State<ShopScreen> createState() => _ShopScreenState();
 }
 
 class _ShopScreenState extends State<ShopScreen> {
+  ShopModel? shop;
+  bool isLoading = true;
+  List<ShopModel> shops = [];
+  final ShopDetailsService _shopService = ShopDetailsService();
+  
 
-	@override
+  @override
+  void initState() {
+    super.initState();
+    print(_shopService);
+    _loadShop();
+  }
+
+  Future<void> _loadShop() async {
+    final fetchedShops = await _shopService.getAllShops();
+    _shopService.printShops();
+    setState(() {
+      shops = fetchedShops;
+      isLoading = false;
+    });
+  }
+  @override
 	Widget build(BuildContext context) {
 		return Scaffold(
 		backgroundColor: Colors.white,
@@ -34,32 +54,12 @@ class _ShopScreenState extends State<ShopScreen> {
 						_buildTopShopsSection(),
 
 						// Shop Grid
-						_buildShopGridSection(),
+						// _buildShopGridSection(),
 					],
 				),
       )
 			
 			),
-      // bottomNavigationBar: CustomBottomNavBar(
-			// 	currentIndex: 0,
-			// 	onTap: (index) {
-			// 	switch (index) {
-			// 		case 0:
-			// 		Navigator.pushNamed(context, '/home');
-			// 		case 1:
-			// 		Navigator.pushNamed(context, '/shops');
-			// 		break;
-			// 		case 2:
-			// 		Navigator.pushNamed(context, '/create');
-			// 		break;
-			// 		case 3:
-			// 		Navigator.pushNamed(context, '/community');
-			// 		break;
-			// 		case 4:
-			// 		Navigator.pushNamed(context, '/message');
-			// 	}
-			// 	},
-			// ),
 		);
 	}
 
@@ -251,8 +251,17 @@ class _ShopScreenState extends State<ShopScreen> {
 	}
 
 	Widget _buildShopGridSection() {
+    
+     if (isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (shop == null) {
+      return const Center(child: Text('Shop not found'));
+    }
+
 		return Padding(
-			padding: EdgeInsetsGeometry.symmetric(horizontal: 16, vertical: 16),
+			padding: const EdgeInsetsGeometry.symmetric(horizontal: 16, vertical: 16),
 			child: Column(
 				crossAxisAlignment: CrossAxisAlignment.start,
 				children: [
@@ -266,52 +275,25 @@ class _ShopScreenState extends State<ShopScreen> {
 					),
           const SizedBox(height: 16),
 					GridView.count(
-						crossAxisCount: 2,
-						childAspectRatio: 0.8,
-						crossAxisSpacing: 4,
-						mainAxisSpacing: 4,
-						shrinkWrap: true,
-						children: const [
-						ShopCard(
-							shopName: "Infinity Boutique",
-							rating: 5.3,
-							productImages: [
-								"https://picsum.photos/200/150?random=4",
-								"https://picsum.photos/200/150?random=5",
-							],
-							isVerified: true,
-						),
-						ShopCard(
-							shopName: "Infinity Boutique",
-							rating: 5.3,
-							productImages: [
-								"https://picsum.photos/200/150?random=4",
-								"https://picsum.photos/200/150?random=5",
-							],
-							isDelivery: true,
-							isVerified: true,
-						),
-						ShopCard(
-							shopName: "Infinity Boutique",
-							rating: 5.3,
-							productImages: [
-								"https://picsum.photos/200/150?random=4",
-								"https://picsum.photos/200/150?random=5",
-							],
-							isDelivery: true,
-						),
-						ShopCard(
-							shopName: "Infinity Boutique",
-							rating: 5.3,
-							productImages: [
-								"https://picsum.photos/200/150?random=4",
-								"https://picsum.photos/200/150?random=5",
-							],
-							isVerified: true,
-						),
-						],
-					)
-				
+            crossAxisCount: 2,
+            childAspectRatio: 0.8,
+            crossAxisSpacing: 4,
+            mainAxisSpacing: 4,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(), // if inside another scrollable
+            children: shops.map((shop) {
+              // Example product images (you can also store them in the ShopModel)
+              List<String> productImages = [
+                'https://picsum.photos/200/150?random=${shop.id}1',
+                'https://picsum.photos/200/150?random=${shop.id}2',
+              ];
+
+              return ShopCard(
+                shop: shop,
+                productImages: productImages,
+              );
+            }).toList(),
+          )
 				],
 			),
 		); 
@@ -427,231 +409,213 @@ class TopShopCard extends StatelessWidget {
 }
 
 class ShopCard extends StatelessWidget {
-	// final String shopUrl;
-	final String shopName;
-	final double rating;
-	final List<String> productImages;
-	final bool isDelivery;
-	final bool isVerified;
-  
-  // ShopModel shop;
+  final ShopModel shop;
+  final List<String> productImages;
 
-	const ShopCard({
-		super.key,
-		// required this.shopUrl,
-		required this.shopName,
-		required this.rating,
-		required this.productImages,
-		this.isDelivery = false,
-		this.isVerified = false,
-	});
+  const ShopCard({
+    super.key,
+    required this.shop,
+    required this.productImages,
+  });
 
-	@override
-	Widget build(BuildContext context) {
-		return Container(
-			width: 170,
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 170,
       height: 300,
-			margin: const EdgeInsets.all(4),
-			padding: const EdgeInsets.all(7.5),
-			decoration: BoxDecoration(
-				borderRadius: BorderRadius.circular(16),
-				border: Border.all(color: Colors.grey.shade300),
-				color: Colors.white,
-			),
-			child: Column(
-				crossAxisAlignment: CrossAxisAlignment.start,
-				children: [
-					// Shop name + rating
-					Row(
-						mainAxisAlignment: MainAxisAlignment.spaceBetween,
-						children: [
-							Stack(
-								alignment: Alignment.center,
-								children: [
-								// Gradient border for new content
-								Container(
-								width: 40,
-								height: 40,
-								decoration: BoxDecoration(
-									color:Color(0xFF833AB4),
-									shape: BoxShape.circle,
-								),
-								child: Padding(
-									padding: const EdgeInsets.all(2.0),
-									child: Container(
-										decoration: BoxDecoration(
-											color: Colors.white,
-											shape: BoxShape.circle,
-										),
-										child: Padding(
-											padding: const EdgeInsets.all(2.0),
-											child: _buildShopAvatar(),
-										),
-									),
-								),
-								)
-							
-								],
-							),
-							SizedBox(width: 10),
-							Expanded(
-								child: Text(
-									shopName,
-									style: const TextStyle(
-									fontSize: 10,
-									fontWeight: FontWeight.bold,
-									),
-									maxLines: 2,
-									softWrap: true,
-									overflow: TextOverflow.visible,
-								),
-							),
-							Container(
-								padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-								decoration: BoxDecoration(
-									color: Colors.amber.shade100,
-									borderRadius: BorderRadius.circular(12),
-								),
-								child: Row(
-									children: [
-										const Icon(Icons.star,
-											size: 10, color: Colors.orange),
-										Text(
-										rating.toString(),
-										style: const TextStyle(
-											fontSize: 12,
-											fontWeight: FontWeight.w600,
-											color: Colors.orange,
-										),
-										),
-									],
-								),
-							),
-						],
-					),
-					const SizedBox(height: 10),
-					SizedBox(
-						width: double.infinity,              // Thickness of the line
-						height: 1,            // Height of the line
-						child: DecoratedBox(
-							decoration: BoxDecoration(color: Colors.grey.shade300),
-						),
-					),
-					const SizedBox(height: 10),
-					// Badges (delivery, verified)
-					Row(
-						children: [
-							if (isDelivery)
-								Container(
-									padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-									margin: const EdgeInsets.only(right: 6),
-									decoration: BoxDecoration(
-										color: Colors.green.shade50,
-										borderRadius: BorderRadius.circular(12),
-									),
-									child: Text(
-										"Delivery",
-										style: TextStyle(
-											fontSize: 10,
-											color: Colors.green.shade700,
-											fontWeight: FontWeight.w500,
-										),
-									),
-								),
-							if (isVerified)
-								Container(
-									padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-									decoration: BoxDecoration(
-										color: Colors.blue.shade50,
-										borderRadius: BorderRadius.circular(12),
-									),
-									child: Text(
-										"Verified",
-										style: TextStyle(
-										fontSize: 10,
-										color: Colors.blue.shade700,
-										fontWeight: FontWeight.w500,
-										),
-									),
-								),
-						],
-					),
-					const SizedBox(height: 15),
-
-					// Product images row
-					Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-						children: productImages
-							.take(4)
-							.map(
-                  (img) => Padding(
-                    padding: const EdgeInsets.only(right: 6),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.network(
-                        img,
-                        width: 53,
-                        height: 53,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            width: 53,
-                            height: 53,
-                            color: Colors.grey[200],
-                            alignment: Alignment.center,
-                            child: Icon(
-                              Icons.broken_image,
-                              size: 20,
-                              color: Colors.grey[400],
-                            ),
-                          );
-                        },
+      margin: const EdgeInsets.all(4),
+      padding: const EdgeInsets.all(7.5),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade300),
+        color: Colors.white,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Shop name + rating row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Stack(
+                alignment: Alignment.center,
+                children: [
+                  // Gradient border for avatar
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Color(0xFF833AB4),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(2.0),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(2.0),
+                          child: _buildShopAvatar(),
+                        ),
                       ),
                     ),
                   ),
-                )
-							.toList(),
-					),
+                ],
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  shop.name,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  maxLines: 2,
+                  softWrap: true,
+                  overflow: TextOverflow.visible,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade100,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.star, size: 10, color: Colors.orange),
+                    Text(
+                      shop.delivery ? "5.0" : "4.0", // example rating
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.orange,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            height: 1,
+            child: DecoratedBox(
+              decoration: BoxDecoration(color: Colors.grey.shade300),
+            ),
+          ),
+          const SizedBox(height: 10),
 
-					const SizedBox(height: 15),
+          // Badges
+          Row(
+            children: [
+              if (shop.delivery)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  margin: const EdgeInsets.only(right: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    "Delivery",
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Colors.green.shade700,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  "Verified",
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: Colors.blue.shade700,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 15),
 
-					// View Shop button
-					SizedBox(
-						width: double.infinity,
-						child: OutlinedButton(
-							onPressed: () {
-                // Navigator.push(
-                //   context,
-                //   MaterialPageRoute(
-                //   builder: (context) => ShopDetailScreen(shop: shop),
-                //   ),
-                // );
+          // Product images
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: productImages.take(4).map(
+              (img) {
+                return Padding(
+                  padding: const EdgeInsets.only(right: 6),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      img,
+                      width: 53,
+                      height: 53,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          width: 53,
+                          height: 53,
+                          color: Colors.grey[200],
+                          alignment: Alignment.center,
+                          child: Icon(
+                            Icons.broken_image,
+                            size: 20,
+                            color: Colors.grey[400],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                );
               },
-							style: OutlinedButton.styleFrom(
-								shape: RoundedRectangleBorder(
-									borderRadius: BorderRadius.circular(12),
-								),
-								side: BorderSide(color: Colors.purple.shade400),
-							),
-							child: const Text(
-								"View Shop",
-								style: TextStyle(
-									fontSize: 13,
-									fontWeight: FontWeight.w600,
-									color: Colors.purple,
-								),
-							),
-						),
-					),
-				],
-			),
-		);
-	}
+            ).toList(),
+          ),
 
-	Widget _buildShopAvatar() {
+          const SizedBox(height: 15),
+
+          // View Shop button
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: () {
+                // Navigate to shop details screen if needed
+              },
+              style: OutlinedButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                side: BorderSide(color: Colors.purple.shade400),
+              ),
+              child: const Text(
+                "View Shop",
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.purple,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildShopAvatar() {
     return ClipOval(
       child: Image.network(
-        'https://picsum.photos/100/100?random=${shopName.hashCode}',
+        'https://picsum.photos/100/100?random=${shop.name.hashCode}',
         width: 32,
         height: 32,
         fit: BoxFit.cover,
