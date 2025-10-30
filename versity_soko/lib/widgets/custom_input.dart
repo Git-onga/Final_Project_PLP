@@ -6,6 +6,14 @@ class CustomInput extends StatelessWidget {
   final bool obscureText;
   final String? Function(String?)? validator;
   final TextInputType? keyboardType;
+  final Widget? prefixIcon;
+  final Widget? suffixIcon;
+  final Color? prefixIconColor;
+  final InputDecoration? decoration;
+  final TextStyle? style;
+  final VoidCallback? onTap;
+  final bool readOnly;
+  final int? maxLines;
 
   const CustomInput({
     super.key,
@@ -14,6 +22,14 @@ class CustomInput extends StatelessWidget {
     this.obscureText = false,
     this.validator,
     this.keyboardType,
+    this.prefixIcon,
+    this.suffixIcon,
+    this.prefixIconColor,
+    this.decoration,
+    this.style,
+    this.onTap,
+    this.readOnly = false,
+    this.maxLines = 1,
   });
 
   @override
@@ -23,9 +39,41 @@ class CustomInput extends StatelessWidget {
       obscureText: obscureText,
       validator: validator,
       keyboardType: keyboardType,
-      decoration: InputDecoration(
-        labelText: label,
-        // border: const OutlineInputBorder(),
+      style: style ?? const TextStyle(color: Colors.white),
+      onTap: onTap,
+      readOnly: readOnly,
+      maxLines: maxLines,
+      decoration: decoration ?? _buildDefaultDecoration(),
+    );
+  }
+
+  InputDecoration _buildDefaultDecoration() {
+    return InputDecoration(
+      labelText: label,
+      labelStyle: const TextStyle(color: Colors.white70),
+      prefixIcon: prefixIcon,
+      suffixIcon: suffixIcon,
+      filled: true,
+      fillColor: Colors.grey[900],
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Colors.white54),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Colors.white54),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Colors.orange),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Colors.red),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Colors.red),
       ),
     );
   }

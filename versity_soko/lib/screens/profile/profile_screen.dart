@@ -1,15 +1,84 @@
 import 'package:flutter/material.dart';
-import 'package:versity_soko/services/auth_service.dart';
 import '../../screens/profile/edit_profile_screen.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../services/database_service.dart';
 
-class ProfileScreen extends StatelessWidget {
+final supabase = Supabase.instance.client;
+
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    // final authProvider = Provider.of<AuthProvider>(context);
-    // final user = authProvider.user ?? {};
+  State<ProfileScreen> createState() => _ProfileScreenState();
+  
+}
 
+class _ProfileScreenState extends State<ProfileScreen> {
+  String? userName;
+  String? userBio;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserProfile();
+    _loadBio();
+  }
+
+  /// ✅ Fetch user data from Supabase profiles table
+  Future<void> _loadUserProfile() async {
+    final dbService = DatabaseService();
+
+    try {
+      final name = await dbService.loadName();
+
+      if (name != null) {
+        setState(() {
+          userName = name['name'] as String?;
+          _isLoading = false;
+        });
+      } else {
+        setState(() => _isLoading = false);
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('⚠️ Failed to load profile: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _loadBio() async {
+    final dbService = DatabaseService();
+
+    try {
+      final bio = await dbService.loadName();
+
+      if (bio != null) {
+        setState(() {
+          userBio = bio['bio'] as String?;
+          _isLoading = false;
+        });
+      } else {
+        setState(() => _isLoading = false);
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('⚠️ Failed to load profile: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+@override
+  Widget build(BuildContext context) {
+    
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
@@ -92,7 +161,9 @@ class ProfileScreen extends StatelessWidget {
   }
 
   Widget _buildProfileHeader(BuildContext context) {
-   
+    final currentUser = supabase.auth.currentUser;
+    final userEmail = currentUser?.email ?? 'Guest';
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
@@ -147,7 +218,7 @@ class ProfileScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            authService.value.currentUser!.displayName ?? 'Username',
+            userName ?? 'User Name',
             style: const TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
@@ -156,7 +227,7 @@ class ProfileScreen extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-           authService.value.currentUser!.email ?? 'username@example.com',
+           '$userEmail',
             style: TextStyle(
               fontSize: 16,
               color: Colors.grey[600],
@@ -165,7 +236,7 @@ class ProfileScreen extends StatelessWidget {
           const SizedBox(height: 8),
           // if (bio != null && bio.isNotEmpty)
             Text(
-              'Write Something',
+              userBio ?? 'Write Something',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,

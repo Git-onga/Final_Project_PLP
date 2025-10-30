@@ -1,83 +1,53 @@
-import 'dart:io';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
-import 'package:firebase_storage/firebase_storage.dart';
-import '../models/event_model.dart';
+
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class DatabaseService {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseDatabase _database = FirebaseDatabase.instance;
-  final FirebaseStorage _storage = FirebaseStorage.instance;
-  final DatabaseReference _eventsDbRef = FirebaseDatabase.instance.ref().child('events');
+  final supabase = Supabase.instance.client;
 
-  /// Save or update user profile info (name + image)
-  Future<void> saveUserProfile({
-    required String name,
-    File? imageFile,
-  }) async {
-    final user = _auth.currentUser;
+  /// Fetch the logged-in user's profile from the "profiles" table
+  Future<Map<String, dynamic>?> loadName() async {
+    final user = supabase.auth.currentUser;
+
     if (user == null) {
-      throw Exception("No logged-in user found.");
+      throw Exception('No user is logged in.');
     }
 
-    final userRef = _database.ref('users/${user.uid}');
-    final snapshot = await userRef.get();
+    try {
+      final data = await supabase
+          .from('profiles')
+          .select('name')
+          .eq('id', user.id)
+          .single();
+       // The new SDK returns a Map<String, dynamic> for .single()
 
-    String? imageUrl;
-
-    // Upload image if provided
-    if (imageFile != null) {
-      final ref = _storage.ref().child('user_images').child('${user.uid}.jpg');
-      await ref.putFile(imageFile);
-      imageUrl = await ref.getDownloadURL();
-    }
-
-    // If user entry doesn’t exist — create it
-    if (!snapshot.exists) {
-      await userRef.set({
-        'id': user.uid,
-        'name': name,
-        'email': user.email,
-        'profile_picture': imageUrl ?? '',
-        'created_at': DateTime.now().toIso8601String(),
-        'updated_at': DateTime.now().toIso8601String(),
-      });
-    } else {
-      // Update existing user data
-      await userRef.update({
-        'name': name,
-        if (imageUrl != null) 'profile_picture': imageUrl,
-        'updated_at': DateTime.now().toIso8601String(),
-      });
+      return  data; // ✅ 'data' is already the user's profile map
+    } on PostgrestException catch (e) {
+      throw Exception('Supabase error: ${e.message}');
+    } catch (e) {
+      throw Exception('Unexpected error: $e');
     }
   }
 
-  /// Retrieve current user's profile info
-  Future<Map<String, dynamic>?> getUserProfile() async {
-    final user = _auth.currentUser;
-    if (user == null) return null;
+  Future<Map<String, dynamic>?> loadBio() async {
+    final user = supabase.auth.currentUser;
 
-    final userRef = _database.ref('users/${user.uid}');
-    final snapshot = await userRef.get();
+    if (user == null) {
+      throw Exception('No user is logged in.');
+    }
 
-    if (!snapshot.exists) return null;
+    try {
+      final data = await supabase
+          .from('profiles')
+          .select('bio')
+          .eq('id', user.id)
+          .single();
+       // The new SDK returns a Map<String, dynamic> for .single()
 
-    return Map<String, dynamic>.from(snapshot.value as Map);
-  }
-
-  Future<List<EventModel>> fetchEvents() async {
-    final snapshot = await _eventsDbRef.get();
-
-    print("Database path: ${_eventsDbRef.path}");
-
-    if (snapshot.exists && snapshot.value != null) {
-      final Map data = snapshot.value as Map;
-      return data.entries.map((entry) {
-        return EventModel.fromMap(entry.key, Map<String, dynamic>.from(entry.value));
-      }).toList();
-    } else {
-      print("⚠️ No events found in Firebase!");
-      return [];
+      return  data; // ✅ 'data' is already the user's profile map
+    } on PostgrestException catch (e) {
+      throw Exception('Supabase error: ${e.message}');
+    } catch (e) {
+      throw Exception('Unexpected error: $e');
     }
   }
 }

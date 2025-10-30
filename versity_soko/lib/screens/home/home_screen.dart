@@ -9,8 +9,7 @@ import '../home/notification_screen.dart';
 import '../../models/product_model.dart';
 import '../../models/event_model.dart';
 import '../home/event_details.dart';
-import 'package:versity_soko/services/auth_service.dart';
-import 'package:firebase_database/firebase_database.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -20,7 +19,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final DatabaseReference eventsRef = FirebaseDatabase.instance.ref().child('events');
+  final supabase = Supabase.instance.client;
+
   List<EventModel> events = [];
   bool _loading = true;
 
@@ -35,7 +35,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _fetchEvents() async {
     try {
-      final snapshot = await eventsRef.get();
+      final snapshot = await supabase.from('');
       if (snapshot.exists) {
         final data = snapshot.value as Map<dynamic, dynamic>;
         final loadedEvents = data.entries.map((e) {
@@ -914,7 +914,7 @@ class _HomeHeadSectionState extends State<_HomeHeadSection> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        authService.value.currentUser!.displayName ?? 'Username',
+                        'Username',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,

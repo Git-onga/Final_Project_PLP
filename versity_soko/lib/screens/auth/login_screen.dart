@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
+import 'package:versity_soko/screens/home/home_screen.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/custom_button.dart';
-import '../../widgets/custom_input.dart';
 import '../../widgets/fadeinanimation.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -17,138 +17,298 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            height: 250, // Adjust this height to control the wave size
-            child: ClipPath(
-              clipper: WavyClipper(),
-              child: Container(
-                width: double.infinity,
+      body: Container(
+        // Apply your gradient here
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+            colors: [
+              Color(0xFF764BA2),
+              Color(0xFF667EEA),
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              _buildHeaderSection(),
+              Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 30),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    colors: [
-                      Colors.green.shade900,
-                      const Color(0xFF4CAF50),
-                      Colors.green.shade200,
-                    ],
+                  color: Colors.white,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(30),
+                    topRight: Radius.circular(30)
                   ),
                 ),
                 child: Column(
                   children: [
-                    const SizedBox(height: 40),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 30),
-                      child: Text(
-                        'Versity Soko',
-                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
+                    _LoginForm(),
+                    _buildSocialLoginSection()
                   ],
                 ),
               ),
+              // Login Form
+              
+              // Social Login Section
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeaderSection() {
+    return Container(
+      height: 100,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+          colors: [
+            Color(0xFF764BA2),
+            Color(0xFF667EEA),
+          ],
+        ),
+      ),
+      child: Center(
+        child: Text(
+          'Varsity Soko', 
+          style: TextStyle(color: Colors.white)),
+      )
+    );
+  }
+
+  Widget _buildSocialLoginSection() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 30),
+      decoration: BoxDecoration(
+        color: Colors.white,
+      ),
+      child: Column(
+        children: [
+          // Divider with "or" text
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 30),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Divider(
+                    color: Colors.grey[700],
+                    thickness: 1,
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(
+                    'Or continue with',
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Divider(
+                    color: Colors.grey[700],
+                    thickness: 1,
+                  ),
+                ),
+              ],
             ),
           ),
-          Expanded(
-            child: Container(
-              width: double.infinity,
-              decoration: const BoxDecoration(
-                color: Colors.white,
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 0),
-                child: _Form(),
-              ),
-            ),
-          ),
-          SizedBox(height: 15,),
+          const SizedBox(height: 20),
+          
+          // Social buttons
           FadeInWidget(
             duration: const Duration(milliseconds: 1600),
-              child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 10),
-              height: 80,
-              decoration: BoxDecoration(
-                border: Border(
-                  top: BorderSide(
-                    color: Colors.grey.shade300, // border color
-                    width: 2.0,         // border thickness
-                  ),
-                )
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center, // Align icons to the right
-                crossAxisAlignment: CrossAxisAlignment.stretch, // Align them to top if needed
-                children: [
-                  SvgPicture.asset(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildSocialButton(
+                  icon: SvgPicture.asset(
                     'assets/icons/google.svg',
-                    width: 30,
-                    height: 30,
+                    width: 24,
+                    height: 24,
                   ),
-                  const SizedBox(width: 40), // spacing between icons
-                  SvgPicture.asset(
+                  onTap: () {
+                    // Handle Google login
+                  },
+                ),
+                const SizedBox(width: 20),
+                _buildSocialButton(
+                  icon: SvgPicture.asset(
                     'assets/icons/apple.svg',
-                    width: 49,
-                    height: 49,
+                    width: 24,
+                    height: 24,
+                    color: Colors.white,
                   ),
-                ],
-              ),
-            )
+                  onTap: () {
+                    // Handle Apple login
+                  },
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
-}
 
-class WavyClipper extends CustomClipper<Path> {
-  @override
-  Path getClip(Size size) {
-    final Path path = Path();
-    path.lineTo(0, size.height * 0.6); // Start the wave lower
-
-    // Smooth gentle wave
-    path.quadraticBezierTo(
-      size.width * 0.25, size.height * 0.4, 
-      size.width * 0.5, size.height * 0.6,
+  Widget _buildSocialButton({required Widget icon, required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 60,
+        height: 60,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+            colors:[Color(0xFF764BA2),
+              Color(0xFF667EEA),]
+          ),
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(
+            color: Colors.grey[700]!,
+            width: 1,
+          ),
+        ),
+        child: Center(child: icon),
+      ),
     );
-    path.quadraticBezierTo(
-      size.width * 0.75, size.height * 0.8, 
-      size.width, size.height * 0.6,
-    );
-
-    path.lineTo(size.width, 0);
-    path.close();
-
-    return path;
   }
-
-  @override
-  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }
 
-
-class _Form extends StatefulWidget {
-  const _Form();
+class _LoginForm extends StatefulWidget {
+  const _LoginForm();
 
   @override
-  State<_Form> createState() => _FormState();
+  State<_LoginForm> createState() => _LoginFormState();
 }
 
-class _FormState extends State<_Form> {
+class _LoginFormState extends State<_LoginForm> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+  bool _obscurePassword = true;
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _login() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final success = await authProvider.login(
+      _emailController.text.trim(),
+      _passwordController.text.trim(),
+      context: context,
+    );
+
+    if (success && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Welcome back! '),
+          backgroundColor: Colors.green,
+        ),
+      );
+      // Navigation will be handled by auth state changes
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => HomeScreen()),
+      );
+    }
+  }
+
+  void _showForgotPasswordDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        title: const Text(
+          'Reset Password',
+          style: TextStyle(color: Colors.black),
+        ),
+        content: TextFormField(
+          style: const TextStyle(color: Color.fromARGB(255, 103, 103, 103)),
+          decoration: InputDecoration(
+            labelText: 'Enter your email',
+            labelStyle: const TextStyle(color: Color.fromARGB(255, 103, 103, 103)),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: Colors.white54),
+            ),
+          ),
+          keyboardType: TextInputType.emailAddress,
+        ),
+        actions: [
+          Row(
+            children: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text(
+                  'Cancel',
+                  style: TextStyle(color: Color.fromRGBO(33, 33, 33, 1)),
+                ),
+              ),
+              Spacer(),
+              ElevatedButton(
+                onPressed: () {
+                  // Implement password reset
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Password reset email sent!'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  padding: EdgeInsets.zero, // remove default padding
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Ink(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Color(0xFF764BA2),
+                        Color(0xFF667EEA),
+                      ],
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                    ),
+                    borderRadius: BorderRadius.all(Radius.circular(12)),
+                  ),
+                  child: Container(
+                    alignment: Alignment.center,
+                    constraints: const BoxConstraints(minWidth: 110, minHeight: 40),
+                    child: const Text(
+                      'Send',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              )
+            ],
+          ),
+          
+        ],
+      ),
+    );
   }
 
   @override
@@ -158,130 +318,209 @@ class _FormState extends State<_Form> {
     return Form(
       key: _formKey,
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           FadeInWidget(
             duration: const Duration(milliseconds: 1000),
             child: Text(
               'Welcome Back',
-              textAlign: TextAlign.start,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w700,
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+                fontSize: 28,
               ),
             ),
           ),
-          const SizedBox(height: 22),
+          const SizedBox(height: 32),
+          
+          // Email Input
           FadeInWidget(
             duration: const Duration(milliseconds: 1200),
-            child: _customEmailInput(),
+            child: _buildEmailField(),
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 20),
+          
+          // Password Input
           FadeInWidget(
             duration: const Duration(milliseconds: 1200),
-            child: _customPasswordInput(),
+            child: _buildPasswordField(),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
+          
+          // Forgot Password
+          FadeInWidget(
+            duration: const Duration(milliseconds: 1400),
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: () {
+                  _showForgotPasswordDialog();
+                },
+                child: Text(
+                  'Forgot Password?',
+                  style: TextStyle(
+                    color: Colors.green,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          
+          // Error Message
+          if (authProvider.error != null)
+            FadeInWidget(
+              duration: const Duration(milliseconds: 500),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red.withOpacity(0.3)),
+                ),
+                child: Text(
+                  authProvider.error!,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.red,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ),
+          
+          const SizedBox(height: 24),
+          
+          // Login Button
+          FadeInWidget(
+            duration: const Duration(milliseconds: 1400),
+            child: SizedBox(
+              width: double.infinity,
+              // height: 56,
+              child: CustomButton(
+                text: 'Sign In',
+                isLoading: authProvider.isLoading,
+                onPressed: _login,
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          
+          // Register Link
           FadeInWidget(
             duration: const Duration(milliseconds: 1400),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                TextButton(
-                    onPressed: () {
-                      Navigator.pushNamed(context, '/reset');
-                    },
-                    child: const Text(
-                      ' Forgot Password',
-                      style: TextStyle(fontSize: 12),
+                Text(
+                  'Don\'t have an account?',
+                  style: TextStyle(
+                    color: Colors.grey[500],
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.pushNamed(context, '/register');
+                  },
+                  child: Text(
+                    'Sign Up',
+                    style: TextStyle(
+                      color: Colors.green,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
+                ),
               ],
             ),
           ),
-          const SizedBox(height:8),
-          if (authProvider.error != null)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 0),
-              child: Text(
-                authProvider.error!,
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.red),
-              ),
-            ),
-          FadeInWidget(
-            duration: const Duration(milliseconds: 1400),
-            child: CustomButton(
-              text: 'Login',
-              width: 220,
-              isLoading: authProvider.isLoading,
-              onPressed: () {
-                if (_formKey.currentState!.validate()) {
-                  authProvider
-                      .login(
-                    _emailController.text,
-                    _passwordController.text,
-                  )
-                      .then((success) {
-                    if (success) {
-                      Navigator.pushReplacementNamed(context, '/home');
-                    }
-                  });
-                }
-              },
-            ),
-          ),
-          const SizedBox(height: 12),
-          FadeInWidget(
-            duration: const Duration(milliseconds: 1400),
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 50),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Text(
-                    'Don\'t have an account?',
-                    style: TextStyle(fontSize: 12),
-                  ),
-                  SizedBox(width: 8,),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pushNamed(context, '/register');
-                    },
-                    child: const Text(
-                      ' Register',
-                      style: TextStyle(fontSize: 16),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          
         ],
       ),
     );
   }
 
-  Widget _customEmailInput() {
-    return CustomInput(
+  Widget _buildEmailField() {
+    return TextFormField(
       controller: _emailController,
-      label: 'Email',
+      style: const TextStyle(color: Color.fromARGB(255, 103, 103, 103)),
+      decoration: InputDecoration(
+        labelText: 'Email',
+        labelStyle: const TextStyle(color: Color.fromARGB(255, 103, 103, 103)),
+        prefixIcon: const Icon(Icons.email, color: Color.fromARGB(255, 91, 144, 94)),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.white54),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.white54),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.green),
+        ),
+        filled: true,
+        fillColor: const Color.fromARGB(255, 210, 210, 210),
+      ),
+      keyboardType: TextInputType.emailAddress,
       validator: (value) {
         if (value == null || value.isEmpty) {
           return 'Please enter your email';
+        }
+        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+          return 'Please enter a valid email';
         }
         return null;
       },
     );
   }
 
-  Widget _customPasswordInput() {
-    return CustomInput(
+  Widget _buildPasswordField() {
+    return TextFormField(
       controller: _passwordController,
-      label: 'Password',
-      obscureText: true,
+      style: const TextStyle(color: Color.fromARGB(255, 103, 103, 103)),
+      obscureText: _obscurePassword,
+      decoration: InputDecoration(
+        labelText: 'Password',
+        labelStyle: const TextStyle(color: Color.fromARGB(255, 103, 103, 103)),
+        prefixIcon: const Icon(Icons.lock, color: Color.fromARGB(255, 91, 144, 94),),
+        suffixIcon: IconButton(
+          icon: Icon(
+            _obscurePassword ? Icons.visibility : Icons.visibility_off,
+            color: const Color.fromARGB(255, 103, 103, 103),
+          ),
+          onPressed: () {
+            setState(() {
+              _obscurePassword = !_obscurePassword;
+            });
+          },
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.white54),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.white70),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.green),
+        ),
+        filled: true,
+        fillColor: const Color.fromARGB(255, 210, 210, 210),
+      ),
       validator: (value) {
         if (value == null || value.isEmpty) {
           return 'Please enter your password';
+        }
+        if (value.length < 6) {
+          return 'Password must be at least 6 characters';
         }
         return null;
       },

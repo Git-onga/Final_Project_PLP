@@ -526,16 +526,7 @@ class _CreateBusinessScreen extends State<CreateScreen> {
       height: 56,
       child: ElevatedButton(
         onPressed:(){
-          print(_businessNameController.text);  // ✅ not _businessNameController
-          print(_emailController.text);
-          print(_phoneController.text);
-          shopRef.set({
-            'name': _businessNameController.text,
-            'email': _emailController.text,
-            'phone': _phoneController.text,
-            'category': _selectedCategory,
-            'delivery': _isToggled,
-          });
+          _handleSubmit();
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.blue,
