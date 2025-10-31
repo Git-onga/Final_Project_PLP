@@ -86,18 +86,18 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
         decoration: isCenter
-            ? BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [
-                    Color(0xFF667EEA),
-                    Color(0xFF764BA2),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(20),
-              )
-            : null,
+          ? BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [
+                  Color(0xFF667EEA),
+                  Color(0xFF764BA2),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(20),
+            )
+          : null,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

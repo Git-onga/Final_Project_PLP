@@ -4,13 +4,14 @@ class EventModel {
   final String imageUrl;
   final String organizer;
   final String location;
-  final String date;
-  final String time;
+  final String scheduleDate;
+  final String startTime;
+  final String endTime;
   final String description;
   final bool isFree;
   final String? ticketLink;
   final int attendees;
-  final List<String> categories;
+  final String category;
 
   EventModel({
     required this.id,
@@ -18,29 +19,31 @@ class EventModel {
     required this.imageUrl,
     required this.organizer,
     required this.location,
-    required this.date,
-    required this.time,
+    required this.scheduleDate,
+    required this.startTime,
+    required this.endTime,
     required this.description,
     required this.isFree,
     this.ticketLink,
     required this.attendees,
-    required this.categories,
+    required this.category,
   });
 
-  factory EventModel.fromMap(String id, Map<String, dynamic> map) {
+  factory EventModel.fromJson(Map<String, dynamic> json) {
     return EventModel(
-      id: id,
-      title: map['title'] ?? '',
-      imageUrl: map['imageUrl'] ?? '',
-      organizer: map['organizer'] ?? '',
-      location: map['location'] ?? '',
-      date: map['date'] ?? '',
-      time: map['time'] ?? '',
-      description: map['description'] ?? '',
-      isFree: map['isFree'] ?? false,
-      ticketLink: map['ticketLink'],
-      attendees: map['attendees'] ?? 0,
-      categories: List<String>.from(map['categories'] ?? []),
+      id: json['id']?.toString() ?? '',
+      title: json['title'] ?? '',
+      imageUrl: json['image_url'] ?? '', // ✅ Supabase uses snake_case
+      organizer: json['organizer'] ?? '',
+      location: json['location'] ?? '',
+      scheduleDate: json['schedule_date'] ?? '',
+      startTime: json['start_time'] ?? '',
+      endTime: json['end_time'] ?? '',
+      description: json['description'] ?? '',
+      isFree: json['is_free'] ?? false,
+      ticketLink: json['ticket_link'],
+      attendees: json['attendees'] ?? 0,
+      category: json['categories'] ?? '',
     );
   }
 
@@ -48,16 +51,17 @@ class EventModel {
     return {
       'id': id,
       'title': title,
-      'imageUrl': imageUrl,
+      'image_url': imageUrl, // ✅ matches Supabase column name
       'organizer': organizer,
       'location': location,
-      'date': date,
-      'time': time,
+      'schedule_date': scheduleDate,
+      'start_time': startTime,
+      'end_time': endTime,
       'description': description,
-      'isFree': isFree,
-      'ticketLink': ticketLink,
+      'is_free': isFree,
+      'ticket_link': ticketLink,
       'attendees': attendees,
-      'categories': categories,
+      'categories': category,
     };
   }
 }

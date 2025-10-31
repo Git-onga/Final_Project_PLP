@@ -7,6 +7,7 @@ class ShopModel {
   final String phone;
   final bool delivery;
   final String userId;
+  final DateTime createdAt;
 
   ShopModel({
     required this.id,
@@ -16,25 +17,26 @@ class ShopModel {
     required this.email,
     required this.phone,
     required this.delivery,
-    required this.userId, 
-    required DateTime createdAt,
+    required this.userId,
+    required this.createdAt,
   });
 
-  /// Convert JSON (from Firebase) to ShopModel
+  /// ✅ From Supabase JSON
   factory ShopModel.fromJson(Map<String, dynamic> json) {
     return ShopModel(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      description: json['description'] as String,
-      category: json['category'] as String,
-      email: json['email'] as String,
-      phone: json['phone'] as String,
-      delivery: json['delivery'] as bool,
-      userId: json['userId'] as String,
-      createdAt: DateTime.parse(json['createdAt'] as String),
+      id: json['id'].toString(), // Works whether int or string
+      name: json['name'] ?? '',
+      description: json['description'] ?? '',
+      category: json['category'] ?? '',
+      email: json['email'] ?? '',
+      phone: json['phone'] ?? '',
+      delivery: json['delivery'] ?? false,
+      userId: json['user_id'] ?? '', // match Supabase column name
+      createdAt: DateTime.parse(json['created_at'] ?? DateTime.now().toIso8601String()),
     );
   }
 
+  /// ✅ To JSON
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -44,21 +46,8 @@ class ShopModel {
       'email': email,
       'phone': phone,
       'delivery': delivery,
-      'userId': userId,
+      'user_id': userId,
+      'created_at': createdAt.toIso8601String(),
     };
-  }
-
-  factory ShopModel.fromMap(String id, Map<String, dynamic> map) {
-    return ShopModel(
-      id: id,
-      name: map['name'] ?? '',
-      description: map['description'] ?? '',
-      category: map['category'] ?? '',
-      email: map['email'] ?? '',
-      phone: map['phone'] ?? '',
-      delivery: map['delivery'] ?? false,
-      userId: map['userId'] ?? '',
-      createdAt: DateTime.parse(map['createdAt'] ?? DateTime.now().toIso8601String())
-    );
   }
 }

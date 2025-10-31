@@ -10,6 +10,8 @@ import '../../models/product_model.dart';
 import '../../models/event_model.dart';
 import '../home/event_details.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../services/database_service.dart';
+import '../../services/retrieve_event_details.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -19,45 +21,32 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final supabase = Supabase.instance.client;
+  final SupabaseClient supabase = Supabase.instance.client;
 
   List<EventModel> events = [];
   bool _loading = true;
+  String? userName;
+  final RetrieveEventDetails _eventService = RetrieveEventDetails();
 
 	@override
-	void initState() {
-		super.initState();
+  void initState() {
+    super.initState();
+    print(_eventService);
     _fetchEvents();
-		WidgetsBinding.instance.addPostFrameCallback((_) {
-		  Provider.of<ProductProvider>(context, listen: false).loadProducts();
-		});
-	}
+  }
 
   Future<void> _fetchEvents() async {
-    try {
-      final snapshot = await supabase.from('');
-      if (snapshot.exists) {
-        final data = snapshot.value as Map<dynamic, dynamic>;
-        final loadedEvents = data.entries.map((e) {
-          return EventModel.fromMap(e.key, Map<String, dynamic>.from(e.value));
-        }).toList();
-
-        setState(() {
-          events = loadedEvents;
-          _loading = false;
-        });
-      } else {
-        setState(() {
-          _loading = false;
-        });
-      }
-    } catch (e) {
-      print('Error fetching events: $e');
-      setState(() {
-        _loading = false;
-      });
+    final fetchedEvents = await _eventService.getWeekEvents();
+    _eventService.printShops();
+    for (final event in fetchedEvents) {
+      print('🛍️ Event: ${event.title}, Category: ${event.category}, Email: ${event.organizer}');
     }
+    setState(() {
+      events = fetchedEvents;
+      _loading = false;
+    });
   }
+
 
 	@override
 	Widget build(BuildContext context) {
@@ -303,7 +292,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
-                            event.date,
+                            event.scheduleDate,
                             style: const TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
@@ -355,7 +344,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               Icon(Icons.access_time, size: 12, color: Colors.grey[600]),
                               const SizedBox(width: 4),
                               Text(
-                                event.time,
+                                '${event.startTime} - ${event.endTime}',
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: Colors.grey[600],
@@ -366,26 +355,21 @@ class _HomeScreenState extends State<HomeScreen> {
                           const Spacer(),
                           Row(
                             children: [
-                              Expanded(
-                                child: Wrap(
-                                  spacing: 4,
-                                  children: event.categories.take(1).map((cat) {
-                                    return Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                                      decoration: BoxDecoration(
-                                        color: Colors.purple[50],
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: Text(
-                                        cat,
-                                        style: TextStyle(
-                                          color: Colors.purple[700],
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    );
-                                  }).toList(),
+                             Expanded(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: Colors.purple[50],
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    event.category, // now a single string
+                                    style: TextStyle(
+                                      color: Colors.purple[700],
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
                                 ),
                               ),
                               ElevatedButton(
@@ -435,8 +419,8 @@ class _HomeScreenState extends State<HomeScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("Date: ${event.date}"),
-            Text("Time: ${event.time}"),
+            Text("Date: ${event.scheduleDate}"),
+            Text("Time: ${event.startTime} - ${event.endTime}"),
             Text("Location: ${event.location}"),
             const SizedBox(height: 16),
             Text(
@@ -879,6 +863,38 @@ class _HomeHeadSection extends StatefulWidget {
 }
 
 class _HomeHeadSectionState extends State<_HomeHeadSection> {
+  void initializeState() {
+    _loadUserProfile();
+  }
+
+  bool _loading = true;
+  String? userName;
+
+  Future<void> _loadUserProfile() async {
+    final dbService = DatabaseService();
+
+    try {
+      final name = await dbService.loadName();
+
+      if (name != null) {
+        setState(() {
+          userName = name['name'] as String?;
+          _loading = false;
+        });
+      } else {
+        setState(() => _loading = false);
+      }
+    } catch (e) {
+      setState(() => _loading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('⚠️ Failed to load profile: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -914,7 +930,7 @@ class _HomeHeadSectionState extends State<_HomeHeadSection> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        'Username',
+                        userName ?? 'User Name',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,

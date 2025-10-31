@@ -1,29 +1,37 @@
-import 'package:firebase_database/firebase_database.dart';
 import '../models/shop_model.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ShopDetailsService {
-  final DatabaseReference _shopsDbRef = FirebaseDatabase.instance.ref().child('shops');
+  final SupabaseClient database = Supabase.instance.client;
 
-  /// Retrieve shop details by shop ID
+  /// ✅ Retrieve all shops from Supabase
   Future<List<ShopModel>> getAllShops() async {
-    final snapshot = await _shopsDbRef.get();
-    if (!snapshot.exists || snapshot.value == null) return [];
+    
+    try {
+      final response = await database.from('shops').select('*');
+      print(response);
+      if (response.isEmpty) return [];
 
-    final data = Map<String, dynamic>.from(snapshot.value as Map);
-    return data.entries.map((e) {
-      final shopData = Map<String, dynamic>.from(e.value as Map);
-      return ShopModel.fromJson(shopData);
-    }).toList();
+      return response.map((shop) {
+        print('Successfully fetched shop: ${shop}');
+        return ShopModel.fromJson(Map<String, dynamic>.from(shop));
+        
+      }).toList();
+    } catch (e) {
+      print('❌ Error fetching shops: $e');
+      return [];
+    }
+  }
 
+  /// ✅ Print shops (for debugging)
+  Future<void> printShops() async {
+    try {
+      final shops = await getAllShops();
+      for (final shop in shops) {
+        print('🛒 ${shop.name} - ${shop.category}');
+      }
+    } catch (e) {
+      print('❌ Error printing shops: $e');
+    }
   }
-  void printShops() {
-    final _shopsPrint = _shopsDbRef.once().then((DatabaseEvent event) {
-      final data = event.snapshot.value;
-      return data;
-    });
-    print(
-      _shopsPrint
-    );
-  }
- 
 }

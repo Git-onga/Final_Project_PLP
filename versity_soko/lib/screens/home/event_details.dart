@@ -180,7 +180,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          widget.event.date,
+                          widget.event.scheduleDate,
                           style: TextStyle(
                             color: Colors.blue[700],
                             fontSize: 12,
@@ -383,14 +383,14 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-              _buildDetailRow(Icons.calendar_today, 'Date & Time', '${widget.event.date} • ${widget.event.time}'),
+              _buildDetailRow(Icons.calendar_today, 'Date & Time', '${widget.event.scheduleDate} • ${widget.event.startTime} - ${widget.event.endTime}'),
               const SizedBox(height: 12),
               _buildDetailRow(Icons.location_on, 'Location', widget.event.location),
               const SizedBox(height: 12),
               _buildDetailRow(Icons.people, 'Attendees', '${widget.event.attendees} people going'),
-              if (widget.event.categories.isNotEmpty) ...[
+              if (widget.event.category.isNotEmpty) ...[
                 const SizedBox(height: 12),
-                _buildDetailRow(Icons.category, 'Categories', widget.event.categories.join(', ')),
+                _buildDetailRow(Icons.category, 'Categories', widget.event.category),
               ],
             ],
           ),

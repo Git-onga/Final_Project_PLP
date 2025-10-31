@@ -28,11 +28,15 @@ class _ShopScreenState extends State<ShopScreen> {
   Future<void> _loadShop() async {
     final fetchedShops = await _shopService.getAllShops();
     _shopService.printShops();
+    for (final shop in fetchedShops) {
+      print('🛍️ Shop: ${shop.name}, Category: ${shop.category}, Email: ${shop.email}');
+    }
     setState(() {
       shops = fetchedShops;
       isLoading = false;
     });
   }
+
   @override
 	Widget build(BuildContext context) {
 		return Scaffold(
@@ -54,7 +58,7 @@ class _ShopScreenState extends State<ShopScreen> {
 						_buildTopShopsSection(),
 
 						// Shop Grid
-						// _buildShopGridSection(),
+						_buildShopGridSection(),
 					],
 				),
       )
@@ -251,39 +255,38 @@ class _ShopScreenState extends State<ShopScreen> {
 	}
 
 	Widget _buildShopGridSection() {
-    
-     if (isLoading) {
+    if (isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
 
-    if (shop == null) {
-      return const Center(child: Text('Shop not found'));
+    if (shops.isEmpty) {
+      return const Center(child: Text('No shops found'));
     }
 
-		return Padding(
-			padding: const EdgeInsetsGeometry.symmetric(horizontal: 16, vertical: 16),
-			child: Column(
-				crossAxisAlignment: CrossAxisAlignment.start,
-				children: [
-					Text(
-						'All Shops',
-						style: TextStyle(
-							fontSize: 15,
-							fontWeight: FontWeight.bold,
-							color: Colors.grey[800],
-						),
-					),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'All Shops',
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey[800],
+            ),
+          ),
           const SizedBox(height: 16),
-					GridView.count(
+          GridView.count(
             crossAxisCount: 2,
             childAspectRatio: 0.8,
-            crossAxisSpacing: 4,
-            mainAxisSpacing: 4,
+            crossAxisSpacing: 8,
+            mainAxisSpacing: 8,
             shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(), // if inside another scrollable
+            physics: const NeverScrollableScrollPhysics(),
             children: shops.map((shop) {
-              // Example product images (you can also store them in the ShopModel)
-              List<String> productImages = [
+              // Example product images (you can store URLs in ShopModel if you want)
+              final productImages = [
                 'https://picsum.photos/200/150?random=${shop.id}1',
                 'https://picsum.photos/200/150?random=${shop.id}2',
               ];
@@ -293,12 +296,12 @@ class _ShopScreenState extends State<ShopScreen> {
                 productImages: productImages,
               );
             }).toList(),
-          )
-				],
-			),
-		); 
-		
-	}
+          ),
+        ],
+      ),
+    );
+  }
+
 }
 
 class TopShopCard extends StatelessWidget {
@@ -582,7 +585,7 @@ class ShopCard extends StatelessWidget {
             ).toList(),
           ),
 
-          const SizedBox(height: 15),
+          const SizedBox(height: 14),
 
           // View Shop button
           SizedBox(

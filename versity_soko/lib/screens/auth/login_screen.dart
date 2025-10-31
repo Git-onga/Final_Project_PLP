@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
-import 'package:versity_soko/screens/home/home_screen.dart';
+import 'package:versity_soko/wrapper.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/fadeinanimation.dart';
@@ -223,7 +223,7 @@ class _LoginFormState extends State<_LoginForm> {
       // Navigation will be handled by auth state changes
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => HomeScreen()),
+        MaterialPageRoute(builder: (context) => MainWrapper()),
       );
     }
   }

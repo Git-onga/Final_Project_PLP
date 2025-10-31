@@ -1,10 +1,8 @@
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/shop_model.dart';
 
 class ShopProvider {
-  final _auth = FirebaseAuth.instance;
-  final _database = FirebaseDatabase.instance.ref(); // Root reference
+  final supabase = Supabase.instance.client;
 
   /// ✅ Create a new shop (only one per user)
   Future<void> createShop({
@@ -15,55 +13,88 @@ class ShopProvider {
     required String phone,
     required bool delivery,
   }) async {
-    final user = _auth.currentUser;
+    final user = supabase.auth.currentUser;
     if (user == null) throw Exception("User not logged in");
 
-    final userId = user.uid;
-    final shopRef = _database.child('shops/$userId');
+    final userId = user.id;
 
     // 1️⃣ Check if the user already owns a shop
-    final existingShop = await shopRef.get();
-    if (existingShop.exists) {
+    final existingShop = await supabase
+        .from('shops')
+        .select('id')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+    if (existingShop != null) {
       throw Exception("You already own a shop.");
     }
 
     // 2️⃣ Create new shop data
-    final shop = ShopModel(
-      id: userId,
-      name: name,
-      description: description,
-      category: category,
-      email: email,
-      phone: phone,
-      delivery: delivery,
-      userId: userId,
-      createdAt: DateTime.now(),
-    );
+    final shop = {
+      'name': name,
+      'description': description,
+      'category': category,
+      'email': email,
+      'phone': phone,
+      'delivery': delivery,
+      'user_id': userId,
+      'created_at': DateTime.now().toIso8601String(),
+    };
 
-    // 3️⃣ Save the shop data to Realtime Database
-    await shopRef.set(shop.toJson());
+    // 3️⃣ Insert into Supabase
+    final response = await supabase.from('shops').insert(shop).select().maybeSingle();
+
+    if (response == null) {
+      throw Exception("Failed to create shop");
+    }
+
+    print('✅ Shop created successfully: ${response['name']}');
   }
 
   /// 🔍 Fetch the current user's shop
   Future<ShopModel?> fetchUserShop() async {
-    final user = _auth.currentUser;
-    if (user == null) return null;
+    try {
+      final user = supabase.auth.currentUser;
+      if (user == null) {
+        print('⚠️ No user logged in.');
+        return null;
+      }
 
-    final shopRef = _database.child('shops/${user.uid}');
-    final snapshot = await shopRef.get();
+      // Query the shops table for the logged-in user
+      final response = await supabase
+          .from('shops')
+          .select()
+          .eq('user_id', user.id)
+          .maybeSingle(); // returns a single map or null
 
-    if (!snapshot.exists) return null;
+      if (response == null) {
+        print('⚠️ No shop found for user ${user.id}');
+        return null;
+      }
 
-    final map = Map<String, dynamic>.from(snapshot.value as Map);
-    return ShopModel.fromMap(snapshot.key!, map);
+      // Convert response to ShopModel
+      final shop = ShopModel.fromJson(response);
+      print('✅ Shop fetched successfully: ${shop.name}');
+      return shop;
+    } catch (e, stack) {
+      print('❌ Error fetching user shop: $e');
+      print(stack);
+      return null;
+    }
   }
 
   /// 🚫 Delete user's shop
   Future<void> deleteUserShop() async {
-    final user = _auth.currentUser;
-    if (user == null) return;
+    final user = supabase.auth.currentUser;
+    if (user == null) {
+      throw Exception("User not logged in");
+    }
 
-    final shopRef = _database.child('shops/${user.uid}');
-    await shopRef.remove();
+    final response = await supabase
+        .from('shops')
+        .delete()
+        .eq('user_id', user.id);
+
+    print('✅ Shop deleted successfully for user ${user.id}');
   }
 }
