@@ -140,4 +140,25 @@ class AuthService {
       UserAttributes(password: newPassword),
     );
   }
+
+  Future<Map<String, dynamic>?> fetchUserProfile() async {
+    try {
+      final user = supabase.auth.currentUser;
+      if (user == null) return null;
+
+      // This now directly returns the data
+      final response = await supabase
+          .from('profiles')
+          .select('avatar_url')
+          .eq('id', user.id)
+          .single();
+
+      return response; // ✅ Directly return the map
+    } catch (e) {
+      print('❌ Error fetching profile: $e');
+      return null;
+    }
+  }
+
+
 }

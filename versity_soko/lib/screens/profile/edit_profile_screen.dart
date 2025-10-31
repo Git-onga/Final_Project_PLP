@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../services/auth_service.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -19,11 +20,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   File? _imageFile;
   bool _isSaving = false;
   final supabase = Supabase.instance.client;
+  String? _profileImage;
 
   @override
   void initState() {
     super.initState();
     _initializeForm();
+    _loadUserProfile();
   }
 
   void _initializeForm() {
@@ -41,6 +44,55 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _bioController.dispose();
     _emailController.dispose();
     super.dispose();
+  }
+
+  Future<void> uploadProfileImage({
+      required BuildContext context,
+      required File imageFile,
+    }) async {
+    try {
+      final user = supabase.auth.currentUser;
+      if (user == null) throw Exception("User not signed in");
+
+      // ✅ Limit image size to 2MB
+      final fileSize = imageFile.lengthSync();
+      if (fileSize > 2 * 1024 * 1024) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('❗Please select an image smaller than 2 MB')),
+        );
+        return;
+      }
+
+      // ✅ Create unique file path
+      final filePath = '${user.id}/profile_${DateTime.now().millisecondsSinceEpoch}.jpg';
+
+      // ✅ Upload to Supabase Storage
+      await supabase.storage.from('avatars').upload(filePath, imageFile);
+
+      // ✅ Get the public URL
+      final imageUrl = supabase.storage.from('avatars').getPublicUrl(filePath);
+
+      // ✅ Update user profile record
+      await supabase.from('profiles').update({
+        'avatar_url': imageUrl,
+      }).eq('id', user.id);
+
+      // ✅ Also update auth user metadata
+      await supabase.auth.updateUser(UserAttributes(
+        data: {'avatar_url': imageUrl},
+      ));
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('✅ Profile image uploaded successfully!')),
+      );
+
+      print('🖼️ Image URL: $imageUrl');
+    } catch (error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('❌ Upload failed: $error')),
+      );
+      print('❌ Upload failed: $error');
+    }
   }
 
   Future<void> _pickImage() async {
@@ -76,16 +128,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     try {
       final user = supabase.auth.currentUser;
-      if (user == null) {
-        throw Exception('User not logged in.');
+      if (user == null) throw Exception('User not logged in.');
+
+      // ✅ Upload image if user picked one
+      if (_imageFile != null) {
+        await uploadProfileImage(context: context, imageFile: _imageFile!);
       }
 
+      // ✅ Update user metadata
       final updateResponse = await supabase.auth.updateUser(
         UserAttributes(
-          data: {
-            'name': newName,
-            'bio': newBio,
-          },
+          data: {'name': newName, 'bio': newBio},
         ),
       );
 
@@ -93,18 +146,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         throw Exception('Failed to update user profile');
       }
 
-      // 🔹 Optional: update your 'profiles' table as well if you’re using it
-      // await supabase.from('profiles').upsert({
-      //   'id': user.id,
-      //   'name': newName,
-      //   'bio': newBio,
-      //   'updated_at': DateTime.now().toIso8601String(),
-      // });
+      // ✅ Update your profiles table (recommended)
+      await supabase.from('profiles').upsert({
+        'id': user.id,
+        'name': newName,
+        'bio': newBio,
+        'updated_at': DateTime.now().toIso8601String(),
+      });
 
-      // ✅ Clear all text fields after success
       _nameController.clear();
       _bioController.clear();
-
       setState(() => _isSaving = false);
 
       authProvider.refreshUser();
@@ -130,12 +181,21 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
   }
 
+  Future<void> _loadUserProfile() async{
+    final authService = AuthService();
+    final data = await authService.fetchUserProfile();
+
+    setState(() {
+      _profileImage = data?['avatar_url'] as String?;
+    });
+    
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Edit Profile'),
+        title: const Text('Edit Profile', style: TextStyle(fontWeight: FontWeight.bold),),
         centerTitle: true,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
@@ -145,150 +205,224 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         padding: const EdgeInsets.all(20.0),
         child: Column(
           children: [
-            // Profile Picture
-            GestureDetector(
-              onTap: _pickImage,
-              child: CircleAvatar(
-                radius: 55,
-                backgroundColor: Colors.grey[800],
-                backgroundImage: _imageFile != null
-                    ? FileImage(_imageFile!) as ImageProvider
-                    : NetworkImage('https://picsum.photos/400/600?random=20'),
-                child: Stack(
-                  children: [
-                    if (_imageFile == null)
-                      Positioned(
-                        bottom: 0,
-                        right: 0,
-                        child: Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: const Color.fromARGB(255, 91, 144, 94),
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                          child: const Icon(
-                            Icons.camera_alt,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                        ),
-                      ),
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  colors: [
+                    const Color.fromARGB(255, 241, 238, 246),
+                    const Color.fromARGB(255, 225, 230, 244),
                   ],
                 ),
-              ),
-            ),
-            const SizedBox(height: 25),
-
-            // Full Name
-            TextField(
-              controller: _nameController,
-              style: const TextStyle(color: Color.fromARGB(255, 103, 103, 103)),
-              decoration: InputDecoration(
-                labelText: 'Full Name',
-                labelStyle: const TextStyle(color: Color.fromARGB(255, 103, 103, 103)),
-                prefixIcon: Icon(Icons.person_outline, color: Color.fromARGB(255, 91, 144, 94)),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Colors.grey),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Colors.white54),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Colors.green,)
-                ),
-                filled: true,
-                fillColor: const Color.fromARGB(255, 210, 210, 210),
-              ),
-            ),
-            const SizedBox(height: 15),
-
-            // Email (read-only)
-            TextField(
-              controller: _emailController,
-              readOnly: true,
-              style: const TextStyle(color: Color.fromARGB(255, 103, 103, 103)),
-              decoration: InputDecoration(
-                labelText: 'Email',
-                labelStyle: const TextStyle(color: Color.fromARGB(255, 103, 103, 103)),
-                prefixIcon: const Icon(Icons.email_outlined, color: Color.fromARGB(255, 91, 144, 94)),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Colors.white54),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Colors.green),
-                ),
-                filled: true,
-                fillColor: const Color.fromARGB(255, 210, 210, 210),
-              ),
-            ),
-            const SizedBox(height: 15),
-
-            // Bio
-            TextField(
-              controller: _bioController,
-              style: const TextStyle(color: Color.fromARGB(255, 103, 103, 103)),
-              decoration: InputDecoration(
-                labelText: 'Bio (optional)',
-                labelStyle: const TextStyle(color: Color.fromARGB(255, 103, 103, 103)),
-                prefixIcon: const Icon(Icons.info_outline, color: Color.fromARGB(255, 91, 144, 94)),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Colors.white54),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Colors.white54),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Colors.green),
-                ),
-                filled: true,
-                fillColor: Color.fromARGB(255, 210, 210, 210),
-              ),
-              maxLines: 3,
-            ),
-            const SizedBox(height: 25),
-
-            // Save button
-            SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton(
-                onPressed: _isSaving ? null : _saveProfile,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color.fromARGB(255, 91, 144, 94),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
                   ),
-                ),
-                child: _isSaving
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2,
+                ],
+              ),
+
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // Label under the picture
+                  const Text(
+                    'Profile Picture',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Color.fromARGB(255, 103, 103, 103),
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 8),
+
+                  // Profile Picture
+                  Center(
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        CircleAvatar(
+                          radius: 55,
+                          backgroundColor: Colors.grey[300],
+                          backgroundImage: _imageFile != null
+                              ? FileImage(_imageFile!) as ImageProvider
+                              : NetworkImage('$_profileImage'),
                         ),
-                      )
-                    : const Text(
-                        'Save Changes',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+
+                        // Camera button
+                        Positioned(
+                          bottom: 4,
+                          right: 4,
+                          child: GestureDetector(
+                            onTap: _pickImage,
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: const Color.fromARGB(255, 91, 144, 94),
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.2),
+                                    blurRadius: 4,
+                                    offset: const Offset(1, 2),
+                                  ),
+                                ],
+                              ),
+                              child: const Icon(
+                                Icons.camera_alt,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // Optional small instruction text (safe to remove)
+                  Text(
+                    'Tap the camera to update your picture',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 25),
+
+            Container (
+              width: double.infinity,
+              padding: const EdgeInsets.all(24),
+              margin: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                    colors: /*_isDarkMode
+                      ? [
+                          const Color(0xFF1E1A33), // deep indigo-black
+                          const Color(0xFF2C254A), // dark lavender hue
+                        ]
+                      : */[
+                          const Color.fromARGB(255, 241, 238, 246),
+                          const Color.fromARGB(255, 225, 230, 244),
+                        ],
+                ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  TextField(
+                    controller: _nameController,
+                    style: const TextStyle(color: Color.fromARGB(255, 103, 103, 103)),
+                    decoration: InputDecoration(
+                      labelText: 'Full Name',
+                      labelStyle: const TextStyle(color: Color.fromARGB(255, 103, 103, 103)),
+                      prefixIcon: Icon(Icons.person_outline, color: Color.fromARGB(255, 91, 144, 94)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Colors.grey),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Colors.white54),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Colors.green,)
+                      ),
+                      filled: true,
+                      fillColor: const Color.fromARGB(255, 210, 210, 210),
+                    ),
+                  ),
+                  const SizedBox(height: 15),
+
+                  // Email (read-only)
+                  TextField(
+                    controller: _emailController,
+                    readOnly: true,
+                    style: const TextStyle(color: Color.fromARGB(255, 103, 103, 103)),
+                    decoration: InputDecoration(
+                      labelText: 'Email',
+                      labelStyle: const TextStyle(color: Color.fromARGB(255, 103, 103, 103)),
+                      prefixIcon: const Icon(Icons.email_outlined, color: Color.fromARGB(255, 91, 144, 94)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Colors.white54),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Colors.green),
+                      ),
+                      filled: true,
+                      fillColor: const Color.fromARGB(255, 210, 210, 210),
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 25),
+
+                  // Save button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Color(0xFF764BA2),
+                            Color(0xFF667EEA) // soft teal green
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: ElevatedButton(
+                        onPressed: () {
+                          _saveProfile();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          shadowColor: Colors.transparent,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        ),
+                        child: const Text(
+                          'Save Changes',
+                          style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
-        ),
+        ), 
       ),
     );
   }
