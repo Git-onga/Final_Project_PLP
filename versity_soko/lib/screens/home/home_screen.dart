@@ -31,16 +31,11 @@ class _HomeScreenState extends State<HomeScreen> {
 	@override
   void initState() {
     super.initState();
-    print(_eventService);
     _fetchEvents();
   }
 
   Future<void> _fetchEvents() async {
     final fetchedEvents = await _eventService.getWeekEvents();
-    _eventService.printShops();
-    for (final event in fetchedEvents) {
-      print('🛍️ Event: ${event.title}, Category: ${event.category}, Email: ${event.organizer}');
-    }
     setState(() {
       events = fetchedEvents;
       _loading = false;

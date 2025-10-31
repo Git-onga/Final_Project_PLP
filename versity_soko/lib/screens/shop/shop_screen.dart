@@ -21,16 +21,11 @@ class _ShopScreenState extends State<ShopScreen> {
   @override
   void initState() {
     super.initState();
-    print(_shopService);
     _loadShop();
   }
 
   Future<void> _loadShop() async {
     final fetchedShops = await _shopService.getAllShops();
-    _shopService.printShops();
-    for (final shop in fetchedShops) {
-      print('🛍️ Shop: ${shop.name}, Category: ${shop.category}, Email: ${shop.email}');
-    }
     setState(() {
       shops = fetchedShops;
       isLoading = false;

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:versity_soko/screens/create/shop_redirector.dart';
 import '../screens/home/home_screen.dart';
 import '../screens/shop/shop_screen.dart';
-import '../screens/create/create_screen.dart';
 import '../screens/community/community_screen.dart';
 import '../screens/message/message_screen.dart';
 import '../widgets/custom_bottom_nav_bar.dart'; // <— your custom nav bar
@@ -19,7 +19,7 @@ class _MainWrapperState extends State<MainWrapper> {
   final List<Widget> _screens = const [
     HomeScreen(),
     CommunityScreen(),
-    CreateScreen(),
+    ShopRedirector(),
     ShopScreen(shopId: '',),
     MessageScreen(),
   ];

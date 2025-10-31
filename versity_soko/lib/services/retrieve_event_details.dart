@@ -17,14 +17,12 @@ class RetrieveEventDetails {
       // Convert each item to EventModel
       final events = data.map((event) {
         final map = Map<String, dynamic>.from(event);
-        print('✅ Successfully fetched event: ${map['title']} - ${map['organizer']}');
         return EventModel.fromJson(map);
       }).toList();
 
       return events;
-    } catch (e, stackTrace) {
+    } catch (e) {
       print('❌ Error fetching events: $e');
-      print(stackTrace);
       return [];
     }
   }

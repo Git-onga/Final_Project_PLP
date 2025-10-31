@@ -12,8 +12,8 @@ import 'wrapper.dart';
 import 'screens/shop/shop_screen.dart';
 import 'screens/community/community_screen.dart';
 import 'screens/message/message_screen.dart';
-import 'screens/create/create_screen.dart';
 import 'screens/auth/reset_password.dart';
+import 'screens/create/shop_redirector.dart';
 
 // supabase packages
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -24,6 +24,7 @@ void main() async {
   await Supabase.initialize(
     url: 'https://mpdckqnlcxgkfjcidwso.supabase.co',
     anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1wZGNrcW5sY3hna2ZqY2lkd3NvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE4MDY3NzEsImV4cCI6MjA3NzM4Mjc3MX0.fpZULar3qWOhwChj6b76dNV0jk2nbplH1WzxcS0dm8I',
+    
   );
   
   runApp(const MyApp());
@@ -53,7 +54,7 @@ class MyApp extends StatelessWidget {
           '/shops': (context) => const ShopScreen(shopId: ''),
           '/community': (context) => const CommunityScreen(),
           '/message': (context) => const MessageScreen(),
-          '/create': (context) => const CreateScreen(),
+          '/create': (context) => const ShopRedirector(),
           '/reset': (context) => const ResetPasswordScreen(),
         },
         debugShowCheckedModeBanner: false,

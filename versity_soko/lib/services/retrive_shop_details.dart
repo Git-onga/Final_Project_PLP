@@ -9,11 +9,9 @@ class ShopDetailsService {
     
     try {
       final response = await database.from('shops').select('*');
-      print(response);
       if (response.isEmpty) return [];
 
       return response.map((shop) {
-        print('Successfully fetched shop: ${shop}');
         return ShopModel.fromJson(Map<String, dynamic>.from(shop));
         
       }).toList();

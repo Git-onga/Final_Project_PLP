@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:versity_soko/screens/create/kiosk_screen.dart';
 import '../../providers/shop_provider.dart';
-import 'package:firebase_database/firebase_database.dart';
 
 
 class CreateScreen extends StatefulWidget {
@@ -17,7 +17,7 @@ class _CreateBusinessScreen extends State<CreateScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   final _provider = ShopProvider();
-  final database = FirebaseDatabase.instance.ref();
+  final SupabaseClient database = Supabase.instance.client;
 
   String name = '', desc = '', category = '', email = '', phone = '';
   bool delivery = false;
@@ -519,8 +519,6 @@ class _CreateBusinessScreen extends State<CreateScreen> {
   }
 
   Widget _buildCreateProfileButton() {
-    final shopRef = database.child('shops');
-
     return SizedBox(
       width: double.infinity,
       height: 56,

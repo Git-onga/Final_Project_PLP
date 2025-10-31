@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class CustomBottomNavBar extends StatefulWidget {
   final int currentIndex;
@@ -15,6 +16,40 @@ class CustomBottomNavBar extends StatefulWidget {
 }
 
 class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
+
+  final supabase = Supabase.instance.client;
+  bool hasShop = false;
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkIfUserHasShop();
+  }
+
+  Future<void> _checkIfUserHasShop() async {
+    final user = supabase.auth.currentUser;
+    if (user == null) {
+      setState(() {
+        isLoading = false;
+        hasShop = false;
+      });
+      return;
+    }
+
+    final response = await supabase
+        .from('shops')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+    setState(() {
+      hasShop = response != null;
+      isLoading = false;
+    });
+  }
+
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -42,14 +77,16 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
               _buildNavItem(
                 icon: Icons.group,
                 activeIcon: Icons.group,
-                label: 'Community',
+                label: 'Hub',
                 index: 1,
               ),
               
               _buildNavItem(
-                icon: Icons.add_circle_outline,
-                activeIcon: Icons.add_circle,
-                label: 'Create',
+                icon: hasShop
+                  ? Icons.storefront_outlined
+                  : Icons.add_circle_outline,
+                activeIcon:  hasShop ? Icons.storefront : Icons.add_circle,
+                label: hasShop ? 'Kyosk' : 'Create',
                 index: 2,
                 isCenter: true,
               ),
@@ -62,7 +99,7 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
               _buildNavItem(
                 icon: Icons.message,
                 activeIcon: Icons.message,
-                label: 'Hub',
+                label: 'Messo',
                 index: 4,
               ),
             ],
