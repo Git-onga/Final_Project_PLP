@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import '../../models/notification_model.dart';
+import '../../services/notification_service.dart';
 
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({super.key});
@@ -9,9 +10,10 @@ class NotificationScreen extends StatefulWidget {
 }
 
 class _NotificationScreenState extends State<NotificationScreen> {
-  List<NotificationItem> _notifications = [];
+  List<NotificationModel> _notifications = [];
   NotificationFilter _currentFilter = NotificationFilter.all;
   bool _isLoading = false;
+  final NotificationService _notificationService = NotificationService();
 
   @override
   void initState() {
@@ -20,77 +22,64 @@ class _NotificationScreenState extends State<NotificationScreen> {
   }
 
   Future<void> _loadNotifications() async {
-    setState(() {
-      _isLoading = true;
-    });
-
-    // Simulate API call
-    await Future.delayed(const Duration(seconds: 1));
-
-    setState(() {
-      _notifications = _getMockNotifications();
-      _isLoading = false;
-    });
-  }
-
-  void _markAsRead(int index) {
-    setState(() {
-      _notifications[index].isRead = true;
-    });
-  }
-
-  void _markAllAsRead() {
-    setState(() {
-      for (var notification in _notifications) {
-        notification.isRead = true;
-      }
-    });
-  }
-
-  void _deleteNotification(int index) {
-    setState(() {
-      _notifications.removeAt(index);
-    });
-  }
-
-  void _clearAllNotifications() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Clear All Notifications'),
-          content: const Text('Are you sure you want to clear all notifications? This action cannot be undone.'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                setState(() {
-                  _notifications.clear();
-                });
-              },
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.red,
-              ),
-              child: const Text('Clear All'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  List<NotificationItem> get _filteredNotifications {
-    if (_currentFilter == NotificationFilter.all) {
-      return _notifications;
+    setState(() => _isLoading = true);
+    try {
+      final fetchedNotifications = await _notificationService.fetchNotifications();
+      setState(() {
+        _notifications = fetchedNotifications;
+      });
+    } finally {
+      setState(() => _isLoading = false);
     }
-    return _notifications
-        .where((notification) => notification.type == _currentFilter)
-        .toList();
   }
+
+  Future<void> _markAsRead(String notificationId) async {
+    setState(() => _isLoading = true);
+    try {
+      await _notificationService.markAsRead(notificationId);
+
+      setState(() {
+        final index = _notifications.indexWhere((n) => n.id == notificationId);
+        if (index != -1) {
+          _notifications[index] = _notifications[index].copyWith(isRead: true);
+        }
+      });
+    } catch (e) {
+      debugPrint('❌ Failed to mark as read: $e');
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _markAllAsRead() async {
+    setState(() => _isLoading = true);
+    try {
+      await _notificationService.markAllAsRead();
+
+      setState(() {
+        _notifications = _notifications
+          .map((n) => n.copyWith(isRead: true))
+          .toList();
+      });
+    } catch (e) {
+      debugPrint('❌ Failed to mark all as read: $e');
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  List<NotificationModel> get _filteredNotifications { 
+    switch (_currentFilter) { 
+      case NotificationFilter.all: 
+        return _notifications; 
+      case NotificationFilter.unread: 
+        return _notifications.where((n) => n.isRead == false).toList(); 
+      case NotificationFilter.read: 
+        return _notifications.where((n) => n.isRead == true).toList(); 
+      } 
+    }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -109,11 +98,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
               onPressed: _markAllAsRead,
               tooltip: 'Mark all as read',
             ),
-            IconButton(
-              icon: const Icon(Icons.delete_outline),
-              onPressed: _clearAllNotifications,
-              tooltip: 'Clear all notifications',
-            ),
+            
             const SizedBox(width: 8),
           ],
         ],
@@ -162,7 +147,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                   });
                 },
                 backgroundColor: Colors.grey[100],
-                selectedColor: Colors.blue,
+                selectedColor: Colors.green,
                 checkmarkColor: Colors.white,
                 showCheckmark: true,
               ),
@@ -230,7 +215,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
   Widget _buildNotificationsList() {
     final filteredNotifications = _filteredNotifications;
-    
+
     if (filteredNotifications.isEmpty) {
       return _buildEmptyState();
     }
@@ -243,230 +228,58 @@ class _NotificationScreenState extends State<NotificationScreen> {
         separatorBuilder: (context, index) => const SizedBox(height: 8),
         itemBuilder: (context, index) {
           final notification = filteredNotifications[index];
-          return Dismissible(
-            key: Key(notification.id),
-            direction: DismissDirection.endToStart,
-            background: Container(
-              decoration: BoxDecoration(
-                color: Colors.red,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              alignment: Alignment.centerRight,
-              padding: const EdgeInsets.only(right: 20),
-              child: const Icon(Icons.delete, color: Colors.white),
-            ),
-            onDismissed: (direction) {
-              _deleteNotification(_notifications.indexOf(notification));
-            },
-            child: NotificationCard(
-              notification: notification,
-              onTap: () => _handleNotificationTap(notification, index),
-              onMarkAsRead: () => _markAsRead(_notifications.indexOf(notification)),
-            ),
-          );
+          return _notificationCard(notification); // ✅ Pass the object
         },
       ),
     );
   }
 
-  void _handleNotificationTap(NotificationItem notification, int index) {
-    _markAsRead(_notifications.indexOf(notification));
-    
-    // Handle different notification types
-    switch (notification.type) {
-      case NotificationFilter.order:
-        // Navigate to order details
-        print('Navigating to order: ${notification.id}');
-        break;
-      case NotificationFilter.promotion:
-        // Navigate to promotion
-        print('Navigating to promotion: ${notification.id}');
-        break;
-      case NotificationFilter.following:
-        // Navigate to shop profile
-        print('Navigating to shop: ${notification.id}');
-        break;
-      case NotificationFilter.system:
-        // Show system message
-        print('Showing system message: ${notification.id}');
-        break;
-      default:
-        break;
-    }
-  }
-
-  String _getFilterLabel(NotificationFilter filter) {
-    switch (filter) {
-      case NotificationFilter.all:
-        return 'All';
-      case NotificationFilter.order:
-        return 'Orders';
-      case NotificationFilter.promotion:
-        return 'Promotions';
-      case NotificationFilter.following:
-        return 'Following';
-      case NotificationFilter.system:
-        return 'System';
-    }
-  }
-
-  List<NotificationItem> _getMockNotifications() {
-    final now = DateTime.now();
-    return [
-      NotificationItem(
-        id: '1',
-        title: 'Order Shipped!',
-        message: 'Your order #ORD-12345 has been shipped and is on its way.',
-        type: NotificationFilter.order,
-        timestamp: now.subtract(const Duration(minutes: 5)),
-        icon: Icons.local_shipping_outlined,
-        iconColor: Colors.green,
-        actionText: 'Track Order',
-      ),
-      NotificationItem(
-        id: '2',
-        title: 'Summer Sale!',
-        message: 'Get 50% off on all summer collection. Limited time offer!',
-        type: NotificationFilter.promotion,
-        timestamp: now.subtract(const Duration(hours: 2)),
-        icon: Icons.discount_outlined,
-        iconColor: Colors.orange,
-        actionText: 'Shop Now',
-      ),
-      NotificationItem(
-        id: '3',
-        title: 'New Product Alert',
-        message: 'Infinity Boutique just added new dresses to their collection.',
-        type: NotificationFilter.following,
-        timestamp: now.subtract(const Duration(hours: 5)),
-        icon: Icons.storefront_outlined,
-        iconColor: Colors.purple,
-        actionText: 'View Shop',
-      ),
-      NotificationItem(
-        id: '4',
-        title: 'Order Delivered',
-        message: 'Your order #ORD-12344 has been successfully delivered.',
-        type: NotificationFilter.order,
-        timestamp: now.subtract(const Duration(days: 1)),
-        icon: Icons.check_circle_outline,
-        iconColor: Colors.blue,
-        isRead: true,
-      ),
-      NotificationItem(
-        id: '5',
-        title: 'App Update Available',
-        message: 'A new version of the app is available with exciting features.',
-        type: NotificationFilter.system,
-        timestamp: now.subtract(const Duration(days: 1)),
-        icon: Icons.system_update_outlined,
-        iconColor: Colors.grey,
-        actionText: 'Update Now',
-      ),
-      NotificationItem(
-        id: '6',
-        title: 'Flash Sale!',
-        message: 'Flash sale starts in 1 hour! Get ready for amazing deals.',
-        type: NotificationFilter.promotion,
-        timestamp: now.subtract(const Duration(days: 2)),
-        icon: Icons.flash_on_outlined,
-        iconColor: Colors.red,
-        isRead: true,
-      ),
-      NotificationItem(
-        id: '7',
-        title: 'Campus Trends Live',
-        message: 'Campus Trends is going live in 15 minutes with new arrivals.',
-        type: NotificationFilter.following,
-        timestamp: now.subtract(const Duration(days: 3)),
-        icon: Icons.video_camera_front_outlined,
-        iconColor: Colors.pink,
-        isRead: true,
-      ),
-    ];
-  }
-}
-
-// Notification Model
-class NotificationItem {
-  final String id;
-  final String title;
-  final String message;
-  final NotificationFilter type;
-  final DateTime timestamp;
-  final IconData icon;
-  final Color iconColor;
-  final String? actionText;
-  bool isRead;
-
-  NotificationItem({
-    required this.id,
-    required this.title,
-    required this.message,
-    required this.type,
-    required this.timestamp,
-    required this.icon,
-    required this.iconColor,
-    this.actionText,
-    this.isRead = false,
-  });
-}
-
-// Notification Types
-enum NotificationFilter {
-  all,
-  order,
-  promotion,
-  following,
-  system,
-}
-
-// Notification Card Widget
-class NotificationCard extends StatelessWidget {
-  final NotificationItem notification;
-  final VoidCallback onTap;
-  final VoidCallback onMarkAsRead;
-
-  const NotificationCard({
-    super.key,
-    required this.notification,
-    required this.onTap,
-    required this.onMarkAsRead,
-  });
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _notificationCard(NotificationModel notification) { // ✅ Accept a single notification
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
-      color: notification.isRead ? Colors.white : Colors.blue[50],
+      margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
       child: InkWell(
-        onTap: onTap,
+        onTap: () => _markAsRead(notification.id), // ✅ Correct onTap
         borderRadius: BorderRadius.circular(12),
-        child: Padding(
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: notification.isRead
+                ? const LinearGradient(
+                    colors: [
+                      Color.fromARGB(255, 241, 238, 246),
+                      Color.fromARGB(255, 225, 230, 244),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  )
+                : null,
+            color: notification.isRead ? null : Colors.blue[50],
+            borderRadius: BorderRadius.circular(12),
+          ),
           padding: const EdgeInsets.all(16),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Notification Icon
+              // ✅ Notification Icon
               Container(
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: notification.iconColor.withOpacity(0.1),
+                  color: _getNotificationColor(notification.iconName ?? 'default').withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   notification.icon,
-                  color: notification.iconColor,
+                  color: _getNotificationColor(notification.iconName ?? 'default').withOpacity(0.9),
                   size: 20,
                 ),
               ),
               const SizedBox(width: 12),
-              
-              // Notification Content
+
+              // ✅ Notification Content
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -477,8 +290,8 @@ class NotificationCard extends StatelessWidget {
                           child: Text(
                             notification.title,
                             style: TextStyle(
-                              fontWeight: notification.isRead 
-                                  ? FontWeight.w500 
+                              fontWeight: notification.isRead
+                                  ? FontWeight.w500
                                   : FontWeight.bold,
                               fontSize: 14,
                               color: Colors.black87,
@@ -492,7 +305,7 @@ class NotificationCard extends StatelessWidget {
                             width: 8,
                             height: 8,
                             decoration: const BoxDecoration(
-                              color: Colors.blue,
+                              color: Colors.redAccent,
                               shape: BoxShape.circle,
                             ),
                           ),
@@ -513,35 +326,16 @@ class NotificationCard extends StatelessWidget {
                     Row(
                       children: [
                         Text(
-                          _formatTimestamp(notification.timestamp),
+                          _formatTimestamp(notification.createdAt),
                           style: TextStyle(
                             fontSize: 10,
                             color: Colors.grey[500],
                           ),
                         ),
                         const Spacer(),
-                        if (notification.actionText != null)
-                          TextButton(
-                            onPressed: onTap,
-                            style: TextButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 4,
-                              ),
-                              minimumSize: Size.zero,
-                            ),
-                            child: Text(
-                              notification.actionText!,
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: notification.iconColor,
-                              ),
-                            ),
-                          ),
                         if (!notification.isRead)
                           TextButton(
-                            onPressed: onMarkAsRead,
+                            onPressed: () => _markAsRead(notification.id),
                             style: TextButton.styleFrom(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 8,
@@ -569,23 +363,84 @@ class NotificationCard extends StatelessWidget {
     );
   }
 
+
+  String _getFilterLabel(NotificationFilter filter) {
+    switch (filter) {
+      case NotificationFilter.all:
+        return 'All';
+      case NotificationFilter.read:
+        return 'Read';
+      case NotificationFilter.unread:
+        return 'Unread';
+    }
+  }
+
   String _formatTimestamp(DateTime timestamp) {
     final now = DateTime.now();
     final difference = now.difference(timestamp);
 
-    if (difference.inMinutes < 1) {
+    if (difference.inSeconds < 5) {
       return 'Just now';
+    } else if (difference.inMinutes < 1) {
+      return '${difference.inSeconds}s ago';
+    } else if (difference.inMinutes == 1) {
+      return '1 minute ago';
     } else if (difference.inHours < 1) {
-      return '${difference.inMinutes}m ago';
+      return '${difference.inMinutes} minutes ago';
+    } else if (difference.inHours == 1) {
+      return '1 hour ago';
     } else if (difference.inDays < 1) {
-      return '${difference.inHours}h ago';
+      return '${difference.inHours} hours ago';
+    } else if (difference.inDays == 1) {
+      return 'Yesterday';
     } else if (difference.inDays < 7) {
-      return '${difference.inDays}d ago';
+      return '${difference.inDays} days ago';
+    } else if (difference.inDays < 14) {
+      return '1 week ago';
+    } else if (difference.inDays < 30) {
+      final weeks = (difference.inDays / 7).floor();
+      return '$weeks week${weeks > 1 ? 's' : ''} ago';
+    } else if (difference.inDays < 60) {
+      return '1 month ago';
+    } else if (difference.inDays < 365) {
+      final months = (difference.inDays / 30).floor();
+      return '$months month${months > 1 ? 's' : ''} ago';
+    } else if (difference.inDays < 730) {
+      return '1 year ago';
     } else {
-      return DateFormat('MMM dd, yyyy').format(timestamp);
+      final years = (difference.inDays / 365).floor();
+      return '$years year${years > 1 ? 's' : ''} ago';
     }
   }
+
+  Color _getNotificationColor(String iconName) {
+    print(iconName);
+
+    switch (iconName) {
+      case 'shipped':
+        return Colors.green;
+      case 'shop':
+        return Colors.orange;
+      case 'offer':
+        return Colors.purple;
+      case 'order':
+        return Colors.blue;
+      case 'sales':
+        return Colors.red;
+      default:
+        return Colors.blueGrey; // fallback color
+    }
+  }
+
 }
+
+// Notification Types
+enum NotificationFilter {
+  all,
+  read,
+  unread,
+}
+
 
 // Shimmer Loading Widget
 class ShimmerNotificationItem extends StatelessWidget {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:versity_soko/providers/notification_provider.dart';
 import '../../providers/product_provider.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import '../home/show_case.dart';
@@ -12,6 +13,7 @@ import '../home/event_details.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../services/database_service.dart';
 import '../../services/retrieve_event_details.dart';
+import '../../services/auth_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -27,11 +29,13 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _loading = true;
   String? userName;
   final RetrieveEventDetails _eventService = RetrieveEventDetails();
+  String? _profileImage;
 
 	@override
   void initState() {
     super.initState();
     _fetchEvents();
+    _fetchUserProfile();
   }
 
   Future<void> _fetchEvents() async {
@@ -42,6 +46,51 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  Future<void> _fetchUserProfile() async {
+    final dbService = DatabaseService();
+    final authService = AuthService();
+
+    try {
+      final name = await dbService.loadName();
+      final data = await authService.fetchUserProfile();
+
+
+      if (name != null) {
+        setState(() {
+          userName = name['name'] as String?;
+          _profileImage = data?['avatar_url'] as String?;
+          _loading = false;
+        });
+      } else {
+        setState(() => _loading = false);
+      }
+    } catch (e) {
+      setState(() => _loading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('⚠️ Failed to load profile: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  String getGreetingTime() {
+    final now = DateTime.now();
+    final hour = now.hour;
+
+    if (hour >= 5 && hour < 12) {
+      return 'morning';
+    } else if (hour >= 12 && hour < 17) {
+      return 'afternoon';
+    } else if (hour >= 17 && hour < 21) {
+      return 'evening';
+    } else {
+      return 'night';
+    }
+  }
+
+  String get greetings => getGreetingTime();
 
 	@override
 	Widget build(BuildContext context) {
@@ -62,7 +111,7 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             children: [
               // Header section
-              _HomeHeadSection(),
+              _headerSection(),
               SizedBox(
                 height: 15,
               ),
@@ -172,7 +221,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 16),
                   
                   // Masonry-style grid with vertical spans
-                  _buildRegularProductCard(dummyProducts),
+                  _buildRegularProductCard(dummyProducts, context),
                   
                     
                 ],
@@ -403,6 +452,126 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _headerSection() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        InkWell(
+          onTap: () {
+            // Navigate or perform an action
+            Navigator.push(
+              context, 
+              MaterialPageRoute(builder: (context) => const ProfileScreen()),
+            );
+          },
+          borderRadius: BorderRadius.circular(12.0),
+          child: Container(
+            width: 180,
+            height: 60,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  const Color.fromARGB(255, 241, 238, 246),
+                  const Color.fromARGB(255, 225, 230, 244),
+                ]
+              ),
+              borderRadius: BorderRadius.circular(12.0),
+            ),
+            child: Padding(
+              padding: EdgeInsets.all(8),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 28,
+                    backgroundImage: _profileImage != null && _profileImage!.isNotEmpty
+                        ? NetworkImage(_profileImage!) as ImageProvider
+                        : null,
+                    child: _profileImage == null || _profileImage!.isEmpty
+                        ? const Icon(Icons.person, size: 28, color: Colors.grey)
+                        : null,
+                  ),
+
+                  SizedBox(width: 10),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        userName ?? 'User Name',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      Text(
+                        "Good $greetings",
+                        style: TextStyle(
+                          fontSize: 10,
+                        ),
+                      )
+                    ],
+                  )
+                ],
+              ),
+            ),
+          ),
+        ),
+         
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            gradient: LinearGradient(
+              colors: [
+                const Color.fromARGB(255, 241, 238, 246),
+                const Color.fromARGB(255, 225, 230, 244),
+              ]
+            ),
+            boxShadow:[
+            BoxShadow(
+              color: Colors.grey.withOpacity(.3),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ], 
+          ),
+          child: _notificationIndicator()
+        ),
+      ],
+      
+    );
+    
+  }
+  
+  Widget _notificationIndicator() {
+    final hasUnread = context.watch<NotificationProvider>().hasUnread;
+
+    return Stack(
+      children: [
+        IconButton(
+          icon: const Icon(Icons.notifications_outlined),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const NotificationScreen()),
+            );
+          },
+        ),
+        if (hasUnread)
+          Positioned(
+            right: 10,
+            top: 10,
+            child: Container(
+              width: 10,
+              height: 10,
+              decoration: const BoxDecoration(
+                color: Colors.red,
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
 
   // Helper methods for dialogs
   void _showBookingDialog(EventModel event) {
@@ -487,7 +656,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // 🧩 The post-style product card (Instagram-like layout)
-  Widget _buildRegularProductCard(List<Product> products) {
+  Widget _buildRegularProductCard(List<Product> products, BuildContext context){
     return Column(
       children: products.map((product) {
         return Container(
@@ -535,8 +704,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     TextButton(
                       onPressed: () {
                         Navigator.push(
-                          context, 
-                          MaterialPageRoute(builder: (context) => const FollowingShopsScreen()),
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => FollowingShopsScreen(),
+                          ),
                         );
                       }, 
                       child: Text('Follow', style: TextStyle(fontSize: 12))
@@ -849,154 +1020,6 @@ class ShopStoryItem extends StatelessWidget {
 	}
 }
 
-
-class _HomeHeadSection extends StatefulWidget {
-  const _HomeHeadSection();
-
-  @override
-  State<_HomeHeadSection> createState() => _HomeHeadSectionState();
-}
-
-class _HomeHeadSectionState extends State<_HomeHeadSection> {
-  void initializeState() {
-    _loadUserProfile();
-  }
-
-  bool _loading = true;
-  String? userName;
-
-  Future<void> _loadUserProfile() async {
-    final dbService = DatabaseService();
-
-    try {
-      final name = await dbService.loadName();
-
-      if (name != null) {
-        setState(() {
-          userName = name['name'] as String?;
-          _loading = false;
-        });
-      } else {
-        setState(() => _loading = false);
-      }
-    } catch (e) {
-      setState(() => _loading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('⚠️ Failed to load profile: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        InkWell(
-          onTap: () {
-            // Navigate or perform an action
-            Navigator.push(
-              context, 
-              MaterialPageRoute(builder: (context) => const ProfileScreen()),
-            );
-          },
-          borderRadius: BorderRadius.circular(12.0),
-          child: Container(
-            width: 180,
-            height: 60,
-            decoration: BoxDecoration(
-              color: Colors.blue.shade50,
-              borderRadius: BorderRadius.circular(12.0),
-            ),
-            child: Padding(
-              padding: EdgeInsets.all(8),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    backgroundImage: AssetImage("assets/images/person1.jpeg"),
-                    radius: 28,
-                  ),
-                  SizedBox(width: 10),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        userName ?? 'User Name',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                      Text(
-                        "Kirinyaga University",
-                        style: TextStyle(
-                          fontSize: 10,
-                        ),
-                      )
-                    ],
-                  )
-                ],
-              ),
-            ),
-          ),
-        ),
-        Row(
-          children: [
-            Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                color: Colors.white24,
-                boxShadow:[
-                BoxShadow(
-                  color: Colors.grey.withOpacity(.3),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ], 
-              ),
-              child: IconButton(
-                color: Colors.black,
-                onPressed: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => const NotificationScreen()),);
-                }, 
-                icon: Icon(
-                  Icons.notifications_none_outlined,
-                ),
-              ),
-            ),
-            SizedBox(width: 20,),
-            Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                color: Colors.white24,
-                boxShadow:[
-                BoxShadow(
-                  color: Colors.grey.withOpacity(.3),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ], 
-              ),
-              child: IconButton(
-                color: Colors.black,
-                onPressed: () {}, 
-                icon: Icon(
-                  Icons.menu,
-                ),
-              ),
-            ),
-          ],
-        )
-      ],
-    
-    );
-    
-  }
-}
 
 class OffersBanner extends StatelessWidget {
   const OffersBanner({super.key});
