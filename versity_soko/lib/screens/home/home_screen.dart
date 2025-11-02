@@ -984,21 +984,7 @@ class ShopStoryItem extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
           ),
-          
-          // Category
-          // SizedBox(
-          // 	width: 70,
-          // 	child: Text(
-          // 		category,
-          // 		style: TextStyle(
-          // 			fontSize: 8,
-          // 			color: Colors.grey[600],
-          // 		),
-          // 		maxLines: 1,
-          // 		overflow: TextOverflow.ellipsis,
-          // 		textAlign: TextAlign.center,
-          // 		),
-          // ),
+         
         ],
 			),
 		),

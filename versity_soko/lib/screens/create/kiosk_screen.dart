@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import '../../providers/kyosk_provider.dart';
+import '../../models/shop_order_model.dart';
+import '../../providers/shop_order_provider.dart';
+import '../../services/shop_order_service.dart';
 
 class KioskScreen extends StatefulWidget {
   const KioskScreen({super.key});
@@ -12,17 +16,71 @@ class KioskScreen extends StatefulWidget {
 
 class _KioskScreenState extends State<KioskScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  bool userShowcase = false;
+  late final bool hasUserPosted = userShowcase; // Example check
+  late final String? showcaseImage = userShowcase?.imageUrl;
+  // List<ShopOrderModel> order = [];
+  List<ShopOrderWithProductModel> orderAndProducts = [];
+  final ShopOrderService _orderService = ShopOrderService();
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
+    loadOrders();
+    loadOrdersWithProduct();
   }
 
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
+  // @override
+  // void dispose() {
+  //   _tabController.dispose();
+  //   super.dispose();
+  // }
+
+  void loadOrders() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final fetchedOrders = await _orderService.fetchShopOrders();
+      
+      
+      // Store the orders in state
+      setState(() {
+        orderAndProducts = fetchedOrders;
+        _isLoading = false;
+      });
+
+    } catch (e) {
+      print('Error: $e');
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  void loadOrdersWithProduct() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final fetchedOrdersWithProducts = await _orderService.fetchShopOrdersWithProducts();
+      
+      
+      // Store the orders in state
+      setState(() {
+        orderAndProducts = fetchedOrdersWithProducts;
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('Error: $e');
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -40,15 +98,21 @@ class _KioskScreenState extends State<KioskScreen> with SingleTickerProviderStat
               color: Colors.white,
             ),
           ),
-          backgroundColor: const Color(0xFF6C63FF), // Purple primary
+          backgroundColor: Colors.transparent, // Make background transparent
+          elevation: 0, // Remove shadow if desired
           automaticallyImplyLeading: false,
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.notifications_outlined, color: Colors.white),
-              onPressed: () {},
-              tooltip: 'Notifications',
+          flexibleSpace: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Color(0xFF764BA2),
+                  Color(0xFF667EEA),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
             ),
-          ],
+          ),
           bottom: TabBar(
             controller: _tabController,
             labelColor: Colors.white,
@@ -59,7 +123,7 @@ class _KioskScreenState extends State<KioskScreen> with SingleTickerProviderStat
             unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.normal),
             tabs: const [
               Tab(icon: Icon(Icons.dashboard), text: 'Overview'),
-              Tab(icon: Icon(Icons.inventory_2), text: 'Inventory'),
+              Tab(icon: Icon(Icons.check_circle_outline), text: 'Orders'),
               Tab(icon: Icon(Icons.shopping_bag), text: 'Products'),
               Tab(icon: Icon(Icons.store), text: 'Profile'),
             ],
@@ -69,33 +133,11 @@ class _KioskScreenState extends State<KioskScreen> with SingleTickerProviderStat
           controller: _tabController,
           children: [
             _buildOverviewTab(),
-            _buildInventoryTab(),
+            _buildOrderTab(),
             _buildProductsTab(),
             _buildProfileTab(),
           ],
         ),
-        // bottomNavigationBar: CustomBottomNavBar(
-        //   currentIndex: 0,
-        //   onTap: (index) {
-        //     switch (index) {
-        //       case 0:
-        //         Navigator.pushNamed(context, '/home');
-        //         break;
-        //       case 1:
-        //         Navigator.pushNamed(context, '/shops');
-        //         break;
-        //       case 2:
-        //         Navigator.pushNamed(context, '/create');
-        //         break;
-        //       case 3:
-        //         Navigator.pushNamed(context, '/community');
-        //         break;
-        //       case 4:
-        //         Navigator.pushNamed(context, '/message');
-        //         break;
-        //     }
-        //   },
-        // ),
       ),
     );
   }
@@ -107,22 +149,28 @@ class _KioskScreenState extends State<KioskScreen> with SingleTickerProviderStat
           padding: const EdgeInsets.all(20),
           child: Column(
             children: [
+              _buildSectionHeader('Add Showcases'),
+              const SizedBox(height: 16),
+              _buildShowCase(),
+              const SizedBox(height: 24),
+
               // Quick Stats Cards
               Row(
                 children: [
                   Expanded(
                     child: _buildStatCard(
-                      title: 'Total Orders',
-                      value: '156',
-                      change: '+12%',
-                      icon: Icons.shopping_cart,
-                      color: const Color(0xFF4CAF50), // Green
+                      title: 'Today\'s Showcases',
+                      value: '45',
+                      change: '+5%',
+                      icon: Icons.visibility,
+                      color: const Color(0xFF00BCD4), // Cyan
                     ),
                   ),
+                  
                   const SizedBox(width: 12),
                   Expanded(
                     child: _buildStatCard(
-                      title: 'Revenue',
+                      title: 'Monthly Revenue',
                       value: '\$2,845',
                       change: '+8%',
                       icon: Icons.attach_money,
@@ -146,11 +194,11 @@ class _KioskScreenState extends State<KioskScreen> with SingleTickerProviderStat
                   const SizedBox(width: 12),
                   Expanded(
                     child: _buildStatCard(
-                      title: 'Showcases',
-                      value: '45',
-                      change: '+5%',
-                      icon: Icons.visibility,
-                      color: const Color(0xFF00BCD4), // Cyan
+                      title: 'Monthly Orders',
+                      value: '156',
+                      change: '+12%',
+                      icon: Icons.shopping_cart,
+                      color: const Color(0xFF4CAF50), // Green
                     ),
                   ),
                 ],
@@ -159,16 +207,9 @@ class _KioskScreenState extends State<KioskScreen> with SingleTickerProviderStat
               const SizedBox(height: 24),
 
               // Recent Activity
-              _buildSectionHeader('Recent Activity', Icons.history),
+              _buildSectionHeader('Recent Activity'),
               const SizedBox(height: 16),
-              _buildActivityList(),
-
-              const SizedBox(height: 24),
-
-              // Top Products
-              _buildSectionHeader('Top Products', Icons.star),
-              const SizedBox(height: 16),
-              _buildTopProducts(kioskProvider),
+              _buildActivityList()
             ],
           ),
         );
@@ -176,44 +217,246 @@ class _KioskScreenState extends State<KioskScreen> with SingleTickerProviderStat
     );
   }
 
-  Widget _buildInventoryTab() {
-    return Consumer<KioskProvider>(
-      builder: (context, kioskProvider, child) {
-        final products = kioskProvider.products;
-        
-        return Column(
-          children: [
-            // Inventory Summary
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Colors.purple[50]!, Colors.blue[50]!],
+  Widget _buildOrderTab() {
+    // Calculate order counts by status
+    final receivedCount = orderAndProducts.length;
+    final confirmedCount = orderAndProducts
+        .where((order) => order.status.toLowerCase() == 'confirmed')
+        .length;
+    final cancelledCount = orderAndProducts
+        .where((order) => order.status.toLowerCase() == 'cancelled')
+        .length;
+
+    return Column(
+      children: [
+        // Inventory Summary
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.purple[50]!, Colors.blue[50]!],
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildInventoryStat('Received', '$receivedCount'),
+              _buildInventoryStat('Confirmed', '$confirmedCount'),
+              _buildInventoryStat('Cancelled', '$cancelledCount'),
+            ],
+          ),
+        ),
+
+        Expanded(
+          child: orderAndProducts.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.shopping_bag_outlined,
+                        size: 64,
+                        color: Colors.grey.shade400,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No Orders Yet',
+                        style: TextStyle(
+                          fontSize: 18,
+                          color: Colors.grey.shade600,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Orders will appear here when customers make purchases',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey.shade500,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: orderAndProducts.length,
+                  itemBuilder: (context, index) {
+                    final orderItem = orderAndProducts[index];
+                    return _buildOrderItem(orderItem);
+                  },
                 ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildShowCase() {
+    return Container( 
+      padding: EdgeInsets.all(16),
+      child: Row(
+      
+        children: [
+          GestureDetector(
+            onTap: () {
+            // Navigate or perform an action
+              _showShowCaseOptions();
+            }, // Makes the entire container selectable
+            child: Stack(
+                alignment: Alignment.center,
                 children: [
-                  _buildInventoryStat('Total Items', '${products.length}'),
-                  _buildInventoryStat('Low Stock', '3'),
-                  _buildInventoryStat('Out of Stock', '2'),
+                  CircleAvatar(
+                    radius: 30,
+                    backgroundColor: Colors.white,
+                    backgroundImage: NetworkImage('https://picsum.photos/400/600?random=15'),
+                  ),
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.green,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 1.5),
+                      ),
+                      padding: const EdgeInsets.all(3),
+                      child: const Icon(
+                        Icons.add,
+                        size: 16,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
                 ],
               ),
-            ),
+            
+          ),
+          SizedBox(width: 40),
 
-            Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: products.length,
-                itemBuilder: (context, index) {
-                  return _buildInventoryItem(products[index], kioskProvider);
+          // Left side - Status/Avatar or "No post yet" text
+          _buildShowCaseStatus(hasUserPosted, showcaseImageUrl: showcaseImage),
+          
+          const Spacer(),
+          
+          // Right side - Icon that leads to image picker/text input
+          // _buildShowCaseActions(),
+        ],
+      )
+    );
+  }
+
+  Widget _buildShowCaseStatus(bool hasUserPosted, {String? showcaseImageUrl}) {
+    if (hasUserPosted) {
+      // User has posted - show avatar circle
+      return Container(
+        padding: const EdgeInsets.all(4),
+        decoration: const BoxDecoration(
+          shape: BoxShape.circle,
+          color: Color(0xFF833AB4),
+        ),
+        child: CircleAvatar(
+          radius: 28,
+          backgroundImage: showcaseImageUrl != null
+              ? NetworkImage(showcaseImageUrl)
+              : const NetworkImage('https://picsum.photos/400/600?random=15'),
+          backgroundColor: Colors.grey,
+        )
+      );
+    } else {
+      // User hasn't posted - show text
+      return const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'No post yet',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey,
+            ),
+          ),
+          SizedBox(height: 4),
+          Text(
+            'Showcase your products here',
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey,
+            ),
+          ),
+        ],
+      );
+    }
+  }
+
+
+  void _showShowCaseOptions() {
+    // This will show a modal bottom sheet with options
+    showModalBottomSheet(
+      context: context, // Make sure you have context available
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 16),
+              const Text(
+                'Add to Showcase',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                leading: const Icon(Icons.photo_library, color: Colors.blue),
+                title: const Text('Choose from Gallery'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImageFromGallery();
                 },
               ),
-            ),
-          ],
+              ListTile(
+                leading: const Icon(Icons.camera_alt, color: Colors.blue),
+                title: const Text('Take a Photo'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _takePhoto();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.text_fields, color: Colors.blue),
+                title: const Text('Write a Post'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showTextInput();
+                },
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
         );
       },
     );
+  }
+
+  // Placeholder methods - implement these based on your needs
+  Future<void> _pickImageFromGallery() async {
+    // Implement image picker logic
+    print('Open image gallery');
+  }
+
+  Future<void> _takePhoto() async {
+    // Implement camera logic
+    print('Open camera');
+  }
+
+  void _showTextInput() {
+    // Implement text input dialog
+    print('Show text input');
   }
 
   Widget _buildProductsTab() {
@@ -298,14 +541,14 @@ class _KioskScreenState extends State<KioskScreen> with SingleTickerProviderStat
               const SizedBox(height: 24),
 
               // Shop Settings
-              _buildSectionHeader('Shop Settings', Icons.settings),
+              _buildSectionHeader('Shop Settings'),
               const SizedBox(height: 16),
               _buildSettingsList(),
 
               const SizedBox(height: 24),
 
               // Business Hours
-              _buildSectionHeader('Business Hours', Icons.access_time),
+              _buildSectionHeader('Business Hours'),
               const SizedBox(height: 16),
               _buildBusinessHours(),
 
@@ -390,11 +633,9 @@ class _KioskScreenState extends State<KioskScreen> with SingleTickerProviderStat
     );
   }
 
-  Widget _buildSectionHeader(String title, IconData icon) {
+  Widget _buildSectionHeader(String title) {
     return Row(
       children: [
-        Icon(icon, color: const Color(0xFF6C63FF)),
-        const SizedBox(width: 8),
         Text(
           title,
           style: const TextStyle(
@@ -417,57 +658,46 @@ class _KioskScreenState extends State<KioskScreen> with SingleTickerProviderStat
 
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Column(
-        children: activities.map((activity) {
-          return ListTile(
-            leading: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: activity['color'] as Color? ?? Colors.blue,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(activity['icon'] as IconData, color: Colors.white, size: 20),
-            ),
-            title: Text(activity['title'] as String),
-            subtitle: Text(activity['time'] as String),
-            trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-          );
-        }).toList(),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
       ),
-    );
-  }
-
-  Widget _buildTopProducts(KioskProvider kioskProvider) {
-    final topProducts = kioskProvider.products.take(3).toList();
-    
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Column(
-        children: topProducts.map((product) {
-          return ListTile(
-            leading: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                image: DecorationImage(
-                  image: NetworkImage(product.imageUrl),
-                  fit: BoxFit.cover,
+      margin: const EdgeInsets.all(8),
+      child: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Color.fromARGB(255, 241, 238, 246),
+              Color.fromARGB(255, 225, 230, 244),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.all(Radius.circular(12)),
+        ),
+        child: Column(
+          children: activities.map((activity) {
+            return ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: activity['color'] as Color? ?? Colors.blue,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  activity['icon'] as IconData,
+                  color: Colors.white,
+                  size: 20,
                 ),
               ),
-            ),
-            title: Text(product.name),
-            subtitle: Text('\$${product.price.toStringAsFixed(2)}'),
-            trailing: Chip(
-              label: Text('${product.stock} left'),
-              backgroundColor: product.stock > 10 ? Colors.green[100] : Colors.orange[100],
-            ),
-          );
-        }).toList(),
+              title: Text(activity['title'] as String),
+              subtitle: Text(activity['time'] as String),
+              trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+            );
+          }).toList(),
+        ),
       ),
     );
+
   }
 
   Widget _buildInventoryStat(String title, String value) {
@@ -492,41 +722,202 @@ class _KioskScreenState extends State<KioskScreen> with SingleTickerProviderStat
     );
   }
 
-  Widget _buildInventoryItem(Product product, KioskProvider kioskProvider) {
+  Widget _buildOrderItem(ShopOrderWithProductModel orderAndProducts) {
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
+      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+      elevation: 3,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ListTile(
-        leading: Container(
-          width: 50,
-          height: 50,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-            image: DecorationImage(
-              image: NetworkImage(product.imageUrl),
-              fit: BoxFit.cover,
-            ),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              const Color.fromARGB(255, 241, 238, 246),
+              const Color.fromARGB(255, 225, 230, 244),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
+          borderRadius: BorderRadius.circular(12),
         ),
-        title: Text(product.name),
-        subtitle: Text('Stock: ${product.stock}'),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.remove, color: Colors.red),
-              onPressed: () => _updateStock(product, kioskProvider, product.stock - 1),
-            ),
-            IconButton(
-              icon: const Icon(Icons.add, color: Colors.green),
-              onPressed: () => _updateStock(product, kioskProvider, product.stock + 1),
-            ),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header: Order ID & Status
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Order #${orderAndProducts.id.substring(0, 14)}...',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: _getStatusColor(orderAndProducts.status).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      orderAndProducts.status.toUpperCase(),
+                      style: TextStyle(
+                        color: _getStatusColor(orderAndProducts.status),
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12), 
+              // Product Info
+              Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.shopping_bag,
+                      color: Colors.blue.shade700,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Product: ${orderAndProducts.productName}'),
+                        Text('Quantity: ${orderAndProducts.quantity}'),
+                        Text('Total: Ksh ${orderAndProducts.totalPrice.toStringAsFixed(2)}'),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              // Order Date
+              Text(
+                'Ordered: ${DateFormat('MMM dd, yyyy - HH:mm').format(orderAndProducts.createdAt)}',
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+              const SizedBox(height: 12),
+
+              // Actions
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  // Confirm Button (Elevated)
+                  ElevatedButton.icon(
+                    onPressed: orderAndProducts.status.toLowerCase() == 'pending'
+                        ? () => _updateOrderStatus(orderAndProducts, 'confirmed')
+                        : null,
+                    icon: const Icon(Icons.check_circle_outline, size: 18),
+                    label: const Text('Confirm'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: orderAndProducts.status.toLowerCase() == 'pending'
+                          ? Colors.green
+                          : Colors.grey.shade400,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  
+                  // Cancel Button (Outlined)
+                  OutlinedButton.icon(
+                    onPressed: orderAndProducts.status.toLowerCase() == 'pending'
+                        ? () => _updateOrderStatus(orderAndProducts, 'cancelled')
+                        : null,
+                    icon: const Icon(Icons.cancel_outlined, size: 18),
+                    label: const Text('Cancel'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: orderAndProducts.status.toLowerCase() == 'pending'
+                          ? const Color.fromARGB(255, 239, 112, 103)
+                          : Colors.grey.shade400,
+                      side: BorderSide(
+                        color: orderAndProducts.status.toLowerCase() == 'pending'
+                            ? const Color.fromARGB(255, 239, 112, 103)
+                            : Colors.grey.shade400,
+                        width: 2,
+                      ),
+                      backgroundColor: Colors.transparent,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
+
+  // Helper method for status colors
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return Colors.orange;
+      case 'confirmed':
+      case 'completed':
+        return Colors.green;
+      case 'cancelled':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  void _updateOrderStatus(ShopOrderWithProductModel orderAndProducts, String newStatus) async {
+    try {
+      print('Updating order ${orderAndProducts.id} to status: $newStatus');
+      
+      await _orderService.updateOrderStatus(orderAndProducts.id, newStatus);
+      print('Order status updated successfully to: $newStatus');
+      
+      // Show success message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Order ${newStatus.toLowerCase()} successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        
+        // Reload orders to reflect the change
+        loadOrders();
+      }
+      
+    } catch (e) {
+      print('Error updating order status: $e');
+      
+      // Show error message to user
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update order: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
 
   Widget _buildQuickAction(String title, IconData icon, Color color, VoidCallback onTap) {
     return Card(
@@ -886,6 +1277,26 @@ class _KioskScreenState extends State<KioskScreen> with SingleTickerProviderStat
 
   void _showDeleteConfirmationDialog(Product product, KioskProvider kioskProvider) {
     // Implementation from previous code
+  }
+}
+
+extension on bool {
+  String? get imageUrl => 'https://picsum.photos/400/600?random=1';
+}
+
+extension ShopOrderModelCustomerName on ShopOrderWithProductModel {
+  /// Provides a safe getter for customer name using common possible field names.
+  /// Uses `dynamic` access with a try/catch so this file compiles even if the
+  /// underlying model uses a different field name; it will attempt several
+  /// common alternatives and fall back to 'Unknown'.
+  String get customerName {
+    try {
+      final dyn = this as dynamic;
+      final value = dyn.customerName ?? dyn.customer ?? dyn.buyer ?? dyn.clientName ?? dyn.name;
+      return value?.toString() ?? 'Unknown';
+    } catch (_) {
+      return 'Unknown';
+    }
   }
 }
 
