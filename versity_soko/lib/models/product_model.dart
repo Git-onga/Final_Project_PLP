@@ -1,301 +1,64 @@
 class Product {
   final String id;
-  final String productName;
-  final String shopName;
-  final String imageUrl;
-  final String description;
-  final String price;
-  final int likes;
-  final int comments;
-  final String tag;
+  final String shopId;
+  final String name;
+  final double price;
+  final String? description;
+  final DateTime createdAt;
 
   Product({
     required this.id,
-    required this.productName,
-    required this.shopName,
-    required this.imageUrl,
-    required this.description,
+    required this.shopId,
+    required this.name,
     required this.price,
-    required this.likes,
-    required this.comments,
-    required this.tag,
+    this.description,
+    required this.createdAt,
   });
-}
 
-List<Product> dummyProducts = [
-  Product(
-    id: '1',
-    productName: 'Vintage Leather Backpack',
-    shopName: 'Urban Gear',
-    imageUrl: 'https://images.unsplash.com/photo-1600180758890-6ee6e3cf1df4',
-    description: 'Handmade leather backpack perfect for daily travel or work. Features multiple compartments and water-resistant material.',
-    price: '\$89.99',
-    likes: 245,
-    comments: 32,
-    tag: 'New',
-  ),
-  Product(
-    id: '2',
-    productName: 'Classic White Sneakers',
-    shopName: 'Sneaker Hub',
-    imageUrl: 'https://images.unsplash.com/photo-1528701800489-20be88f2a2c3',
-    description: 'Minimalist and comfortable sneakers for every occasion. Made with sustainable materials and memory foam insoles.',
-    price: '\$59.99',
-    likes: 384,
-    comments: 45,
-    tag: 'Hot',
-  ),
-  Product(
-    id: '3',
-    productName: 'Smart Fitness Watch',
-    shopName: 'TechWorld',
-    imageUrl: 'https://images.unsplash.com/photo-1585386959984-a41552231693',
-    description: 'Track your health, fitness, and sleep patterns easily. 7-day battery life and waterproof design.',
-    price: '\$129.99',
-    likes: 520,
-    comments: 89,
-    tag: 'Trending',
-  ),
-  Product(
-    id: '4',
-    productName: 'Wireless Headphones',
-    shopName: 'SoundVibe',
-    imageUrl: 'https://images.unsplash.com/photo-1580894908361-967195033215',
-    description: 'Noise-cancelling headphones with 20 hours of battery life. Crystal clear audio and comfortable ear cushions.',
-    price: '\$99.99',
-    likes: 410,
-    comments: 51,
-    tag: 'Sale',
-  ),
-  Product(
-    id: '5',
-    productName: 'Cotton Hoodie',
-    shopName: 'CozyWear',
-    imageUrl: 'https://images.unsplash.com/photo-1600185365483-26d7a4c45c3b',
-    description: 'Soft, warm, and durable hoodie for chilly evenings. Available in multiple colors and sizes.',
-    price: '\$39.99',
-    likes: 320,
-    comments: 29,
-    tag: 'Limited',
-  ),
-  Product(
-    id: '6',
-    productName: 'Ceramic Coffee Mug Set',
-    shopName: 'Home Essentials',
-    imageUrl: 'https://images.unsplash.com/photo-1514228742587-6b1558fcf93a',
-    description: 'Set of 4 beautifully crafted ceramic mugs. Dishwasher and microwave safe with comfortable handles.',
-    price: '\$34.99',
-    likes: 156,
-    comments: 18,
-    tag: 'Bestseller',
-  ),
-  Product(
-    id: '7',
-    productName: 'Yoga Mat Premium',
-    shopName: 'FitLife',
-    imageUrl: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b',
-    description: 'Non-slip yoga mat with extra cushioning. Perfect for all types of yoga and exercise routines.',
-    price: '\$45.99',
-    likes: 278,
-    comments: 34,
-    tag: 'Popular',
-  ),
-  Product(
-    id: '8',
-    productName: 'Stainless Steel Water Bottle',
-    shopName: 'EcoLife',
-    imageUrl: 'https://images.unsplash.com/photo-1523362628745-0c100150b504',
-    description: 'Keep your drinks hot or cold for 24 hours. Eco-friendly and BPA-free design.',
-    price: '\$24.99',
-    likes: 432,
-    comments: 67,
-    tag: 'Eco',
-  ),
-  Product(
-    id: '9',
-    productName: 'Bluetooth Speaker',
-    shopName: 'AudioTech',
-    imageUrl: 'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1',
-    description: 'Portable speaker with 360° sound. Waterproof and dustproof for outdoor adventures.',
-    price: '\$79.99',
-    likes: 389,
-    comments: 42,
-    tag: 'New',
-  ),
-  Product(
-    id: '10',
-    productName: 'Wooden Watch',
-    shopName: 'Timeless Accessories',
-    imageUrl: 'https://images.unsplash.com/photo-1523170335258-f5eF6b6c7c1f',
-    description: 'Handcrafted wooden watch with natural wood grain. Lightweight and hypoallergenic.',
-    price: '\$119.99',
-    likes: 198,
-    comments: 23,
-    tag: 'Luxury',
-  ),
-  Product(
-    id: '11',
-    productName: 'Gaming Keyboard',
-    shopName: 'GameGear',
-    imageUrl: 'https://images.unsplash.com/photo-1541140532154-b024d705b90a',
-    description: 'Mechanical gaming keyboard with RGB lighting. Fast response keys and durable construction.',
-    price: '\$89.99',
-    likes: 567,
-    comments: 78,
-    tag: 'Hot',
-  ),
-  Product(
-    id: '12',
-    productName: 'Organic Skincare Set',
-    shopName: 'Natural Beauty',
-    imageUrl: 'https://images.unsplash.com/photo-1556228578-8c89e6adf883',
-    description: 'Complete skincare routine with natural ingredients. Suitable for all skin types.',
-    price: '\$65.99',
-    likes: 234,
-    comments: 31,
-    tag: 'Organic',
-  ),
-  Product(
-    id: '13',
-    productName: 'Minimalist Desk Lamp',
-    shopName: 'Modern Home',
-    imageUrl: 'https://images.unsplash.com/photo-1507473885765-e6ed057f782c',
-    description: 'Adjustable LED desk lamp with 3 brightness levels. Perfect for work or study.',
-    price: '\$49.99',
-    likes: 187,
-    comments: 22,
-    tag: 'Modern',
-  ),
-  Product(
-    id: '14',
-    productName: 'Running Shoes',
-    shopName: 'Active Wear',
-    imageUrl: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff',
-    description: 'Lightweight running shoes with superior cushioning. Breathable mesh upper for maximum comfort.',
-    price: '\$74.99',
-    likes: 345,
-    comments: 56,
-    tag: 'Sale',
-  ),
-  Product(
-    id: '15',
-    productName: 'Smartphone Case',
-    shopName: 'TechProtect',
-    imageUrl: 'https://images.unsplash.com/photo-1601593346740-925612772716',
-    description: 'Protective case with military-grade drop protection. Wireless charging compatible.',
-    price: '\$19.99',
-    likes: 123,
-    comments: 15,
-    tag: 'Essential',
-  ),
-  Product(
-    id: '16',
-    productName: 'Artisan Coffee Beans',
-    shopName: 'Brew Masters',
-    imageUrl: 'https://images.unsplash.com/photo-1587734195503-904fca47e0e9',
-    description: 'Premium single-origin coffee beans. Medium roast with notes of chocolate and citrus.',
-    price: '\$28.99',
-    likes: 267,
-    comments: 38,
-    tag: 'Premium',
-  ),
-  Product(
-    id: '17',
-    productName: 'Leather Wallet',
-    shopName: 'Classic Goods',
-    imageUrl: 'https://images.unsplash.com/photo-1627123424574-724758594e93',
-    description: 'Genuine leather wallet with multiple card slots and RFID protection. Ages beautifully over time.',
-    price: '\$42.99',
-    likes: 189,
-    comments: 26,
-    tag: 'Classic',
-  ),
-  Product(
-    id: '18',
-    productName: 'Plant Pot Set',
-    shopName: 'Green Thumb',
-    imageUrl: 'https://images.unsplash.com/photo-1485955900006-10f4d324d411',
-    description: 'Set of 3 ceramic plant pots with drainage holes. Perfect for indoor plants and succulents.',
-    price: '\$35.99',
-    likes: 176,
-    comments: 19,
-    tag: 'Home',
-  ),
-  Product(
-    id: '19',
-    productName: 'Wireless Charging Pad',
-    shopName: 'PowerUp',
-    imageUrl: 'https://images.unsplash.com/photo-1587080413959-06f8596b9d8e',
-    description: 'Fast wireless charging pad compatible with all Qi-enabled devices. Sleek and compact design.',
-    price: '\$29.99',
-    likes: 298,
-    comments: 33,
-    tag: 'Tech',
-  ),
-  Product(
-    id: '20',
-    productName: 'Handmade Soap Collection',
-    shopName: 'Pure Soaps',
-    imageUrl: 'https://images.unsplash.com/photo-1600857062244-5c0071b6a48e',
-    description: 'Natural handmade soaps with essential oils. Gentle on skin and eco-friendly packaging.',
-    price: '\$22.99',
-    likes: 154,
-    comments: 21,
-    tag: 'Natural',
-  ),
-  Product(
-    id: '21',
-    productName: 'Portable Power Bank',
-    shopName: 'ChargeOn',
-    imageUrl: 'https://images.unsplash.com/photo-1609592810794-1c0d4762b9a9',
-    description: '10000mAh power bank with fast charging technology. Compact design with multiple ports.',
-    price: '\$39.99',
-    likes: 412,
-    comments: 47,
-    tag: 'Essential',
-  ),
-  Product(
-    id: '22',
-    productName: 'Linen Shirt',
-    shopName: 'Summer Style',
-    imageUrl: 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c',
-    description: 'Breathable linen shirt perfect for warm weather. Wrinkle-resistant and comfortable fit.',
-    price: '\$54.99',
-    likes: 223,
-    comments: 28,
-    tag: 'Summer',
-  ),
-  Product(
-    id: '23',
-    productName: 'Cookware Set',
-    shopName: 'Kitchen Pro',
-    imageUrl: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136',
-    description: 'Non-stick cookware set with 8 pieces. Even heat distribution and dishwasher safe.',
-    price: '\$149.99',
-    likes: 178,
-    comments: 24,
-    tag: 'Kitchen',
-  ),
-  Product(
-    id: '24',
-    productName: 'Fitness Resistance Bands',
-    shopName: 'Workout Gear',
-    imageUrl: 'https://images.unsplash.com/photo-1536922246289-88c42f957773',
-    description: 'Set of 5 resistance bands for full-body workouts. Includes carrying case and exercise guide.',
-    price: '\$32.99',
-    likes: 265,
-    comments: 35,
-    tag: 'Fitness',
-  ),
-  Product(
-    id: '25',
-    productName: 'Sunglasses',
-    shopName: 'SunStyle',
-    imageUrl: 'https://images.unsplash.com/photo-1572635196237-14b3f281503f',
-    description: 'UV protection sunglasses with polarized lenses. Classic design with durable frames.',
-    price: '\$69.99',
-    likes: 334,
-    comments: 41,
-    tag: 'Accessory',
-  ),
-];
+  // Convert from Supabase JSON
+  factory Product.fromJson(Map<String, dynamic> json) {
+    return Product(
+      id: json['id']?.toString() ?? '',
+      shopId: json['shop_id']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      price: (json['price'] as num?)?.toDouble() ?? 0.0,
+      description: json['description']?.toString(),
+      createdAt: DateTime.parse(json['created_at']?.toString() ?? DateTime.now().toIso8601String()),
+    );
+  }
+
+  // Convert to JSON
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'shop_id': shopId,
+      'name': name,
+      'price': price,
+      'description': description,
+      'created_at': createdAt.toIso8601String(),
+    };
+  }
+
+  Product copyWith({
+    String? id,
+    String? shopId,
+    String? name,
+    double? price,
+    String? description,
+    DateTime? createdAt,
+  }) {
+    return Product(
+      id: id ?? this.id,
+      shopId: shopId ?? this.shopId,
+      name: name ?? this.name,
+      price: price ?? this.price,
+      description: description ?? this.description,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return 'Product{id: $id, name: $name, price: $price, shopId: $shopId}';
+  }
+}

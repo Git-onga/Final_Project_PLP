@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:versity_soko/providers/notification_provider.dart';
-import '../../providers/product_provider.dart';
+// import '../../providers/product_provider.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import '../home/show_case.dart';
 import '../home/following_screen.dart';
@@ -94,145 +94,135 @@ class _HomeScreenState extends State<HomeScreen> {
 
 	@override
 	Widget build(BuildContext context) {
-		final productProvider = Provider.of<ProductProvider>(context);
-
     if (_loading) {
-      return const Center(child: CircularProgressIndicator());
+        return const Center(child: CircularProgressIndicator());
     }
 
-		return Scaffold(
-        
-      body: SafeArea(
-        child: productProvider.isLoading
-        ? const Center(child: CircularProgressIndicator())
-        : SingleChildScrollView(
-          scrollDirection: Axis.vertical, 
-          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10),
-          child: Column(
-            children: [
-              // Header section
-              _headerSection(),
-              SizedBox(
-                height: 15,
-              ),
-              // Sponser Banner
-              OffersBanner(),
-              // Event Section
-              SizedBox(height: 25,),
-               // Following section
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Section header
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Show Case',
-                        style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey[800],
-                        ),
-                      ),
-                      Spacer(),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.lightBlue.shade50,
-                          borderRadius: BorderRadius.circular(20)
-                        ),
-                        child: TextButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context, 
-                              MaterialPageRoute(builder: (context) => const FollowingShopsScreen()),
-                            );
-                          }, 
-                          child: Text('Following', style: TextStyle(fontSize: 12))
-                        ),
-                      )
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  // Horizontal scrollable stories
-                  SizedBox(
-                    height: 100, // Fixed height for stories
-                    child: ListView(
-                      scrollDirection: Axis.horizontal,
-                      children: const [
-                        SizedBox(width: 4),
-                        ShopStoryItem(
-                          shopName: 'Infinity',
-                          hasNewContent: true, // Gradient outline for new content
-                        ),
-                        
-                        ShopStoryItem(
-                          shopName: 'Nike Store',
-                          hasNewContent: true,
-                        ),
-                        ShopStoryItem(
-                          shopName: 'Tech Hub',
-                          hasNewContent: true, // No gradient - already seen
-                        ),
-                        ShopStoryItem(
-                          shopName: 'Book World',
-                          hasNewContent: false,
-                        ),
-                        ShopStoryItem(
-                          shopName: 'Cafe Brew',
-                          hasNewContent: false,
-                        ),
-                        ShopStoryItem(
-                          shopName: 'Style Zone',
-                          hasNewContent: true,
-                        ),
-                        SizedBox(width: 4),
-                      ],
+    return Scaffold(
+        body: SafeArea(
+            child: _loading
+                ? const Center(child: CircularProgressIndicator())
+                : SingleChildScrollView(
+                    scrollDirection: Axis.vertical,
+                    padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10),
+                    child: Column(
+                        children: [
+                            // Header section
+                            _headerSection(),
+                            const SizedBox(height: 15),
+                            // Sponsor Banner
+                            OffersBanner(),
+                            // Event Section
+                            const SizedBox(height: 25),
+                            // Following section
+                            Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                    // Section header
+                                    Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                            Text(
+                                                'Show Case',
+                                                style: TextStyle(
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.grey[800],
+                                                ),
+                                            ),
+                                            const Spacer(),
+                                            Container(
+                                                decoration: BoxDecoration(
+                                                    color: Colors.lightBlue.shade50,
+                                                    borderRadius: BorderRadius.circular(20)
+                                                ),
+                                                child: TextButton(
+                                                    onPressed: () {
+                                                        Navigator.push(
+                                                            context,
+                                                            MaterialPageRoute(builder: (context) => const FollowingShopsScreen()),
+                                                        );
+                                                    },
+                                                    child: const Text('Following', style: TextStyle(fontSize: 12))
+                                                ),
+                                            )
+                                        ],
+                                    ),
+                                    const SizedBox(height: 12),
+                                    // Horizontal scrollable stories
+                                    SizedBox(
+                                        height: 100, // Fixed height for stories
+                                        child: ListView(
+                                            scrollDirection: Axis.horizontal,
+                                            children: const [
+                                                SizedBox(width: 4),
+                                                ShopStoryItem(
+                                                    shopName: 'Infinity',
+                                                    hasNewContent: true, // Gradient outline for new content
+                                                ),
+                                                ShopStoryItem(
+                                                    shopName: 'Nike Store',
+                                                    hasNewContent: true,
+                                                ),
+                                                ShopStoryItem(
+                                                    shopName: 'Tech Hub',
+                                                    hasNewContent: true, // No gradient - already seen
+                                                ),
+                                                ShopStoryItem(
+                                                    shopName: 'Book World',
+                                                    hasNewContent: false,
+                                                ),
+                                                ShopStoryItem(
+                                                    shopName: 'Cafe Brew',
+                                                    hasNewContent: false,
+                                                ),
+                                                ShopStoryItem(
+                                                    shopName: 'Style Zone',
+                                                    hasNewContent: true,
+                                                ),
+                                                SizedBox(width: 4),
+                                            ],
+                                        ),
+                                    ),
+                                ],
+                            ),
+                            const SizedBox(height: 25),
+                            // Events
+                            Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                    // Section title
+                                    Text(
+                                        'This Week',
+                                        style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.grey[800],
+                                        ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    _buildEventCard(events),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                        'Recommended Products',
+                                        style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.grey[800],
+                                        ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    
+                                    // Masonry-style grid with vertical spans
+                                    _buildRegularProductCard(),
+                                ],
+                            )
+                        ],
                     ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 25,),
-              // Events
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Section title
-                  // const SizedBox(height: 16),
-                  Text(
-                    'This Week',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey[800],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildEventCard(events),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Recommended Products',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey[800],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  
-                  // Masonry-style grid with vertical spans
-                  _buildRegularProductCard(dummyProducts, context),
-                  
-                    
-                ],
-              )
-            ],
-          ),
+                ),
         ),
-      ) ,
-      
     );
-	}
+}
 	
   Widget _buildEventCard(List<EventModel> events) {
     if (events.isEmpty) {
@@ -656,10 +646,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // 🧩 The post-style product card (Instagram-like layout)
-  Widget _buildRegularProductCard(List<Product> products, BuildContext context){
-    return Column(
-      children: products.map((product) {
-        return Container(
+  Widget _buildRegularProductCard(){
+    return Container(
           margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
           decoration: BoxDecoration(
             color: Colors.white,
@@ -692,7 +680,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          product.shopName, // Use product.shopName
+                          'product.shopName', // Use product.shopName
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 13,
@@ -724,11 +712,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     style: const TextStyle(color: Colors.black, fontSize: 13),
                     children: [
                       TextSpan(
-                        text: "${product.shopName} ", // Use product.shopName
+                        text: "Name ", // Use product.shopName
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                       TextSpan(
-                        text: product.description, // Use product.description
+                        text: 'product.description', // Use product.description
                       ),
                     ],
                   ),
@@ -746,30 +734,30 @@ class _HomeScreenState extends State<HomeScreen> {
                       decoration: BoxDecoration(
                         color: Colors.grey[200],
                         image: DecorationImage(
-                          image: NetworkImage(product.imageUrl), // Use product.imageUrl
+                          image: NetworkImage('https://picsum.photos/100/100?random=19'), // Use product.imageUrl
                           fit: BoxFit.cover,
                         ),
                       ),
                     ),
-                    Positioned(
-                      top: 10,
-                      left: 10,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: _getTagColor(product.tag), // Use product.tag
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          product.tag, // Use product.tag
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
+                    // Positioned(
+                    //   top: 10,
+                    //   left: 10,
+                    //   child: Container(
+                    //     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                    //     decoration: BoxDecoration(
+                    //       color: _getTagColor(product.tag), // Use product.tag
+                    //       borderRadius: BorderRadius.circular(6),
+                    //     ),
+                    //     child: Text(
+                    //       product.tag, // Use product.tag
+                    //       style: const TextStyle(
+                    //         color: Colors.white,
+                    //         fontSize: 10,
+                    //         fontWeight: FontWeight.bold,
+                    //       ),
+                    //     ),
+                    //   ),
+                    // ),
                     Positioned(
                       bottom: 10,
                       left: 10,
@@ -780,7 +768,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
-                          product.price, // Use product.tag
+                          'product.price.toStringAsExponential()', // Use product.tag
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 14,
@@ -822,27 +810,14 @@ class _HomeScreenState extends State<HomeScreen> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 14),
                 child: Text(
-                  "${product.likes} likes", // Use product.likes
+                  "likes", // Use product.likes
                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                 ),
               ),
-
-              const SizedBox(height: 6),
-
-              // 💬 View comments
-              // Padding(
-              //   padding: const EdgeInsets.symmetric(horizontal: 14),
-              //   child: Text(
-              //     "View all ${product.comments} comments", // Use product.comments
-              //     style: TextStyle(color: Colors.grey[600], fontSize: 12),
-              //   ),
-              // ),
               const SizedBox(height: 10),
             ],
           ),
         );
-      }).toList(),
-    );
   }
 
 	Color _getTagColor(String tag) {

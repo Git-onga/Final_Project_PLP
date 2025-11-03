@@ -15,6 +15,7 @@ class _ShopRedirectorState extends State<ShopRedirector> {
   bool _isLoading = true;
   bool _hasShop = false;
 
+
   @override
   void initState() {
     super.initState();
@@ -51,6 +52,9 @@ class _ShopRedirectorState extends State<ShopRedirector> {
     }
   }
 
+  // Helper method to get the current shop ID - you need to implement this based on your app's logic
+  
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -60,5 +64,45 @@ class _ShopRedirectorState extends State<ShopRedirector> {
     }
 
     return _hasShop ? const KioskScreen() : const CreateScreen();
+  }
+}
+
+
+class ShopHelper {
+  final supabase = Supabase.instance.client;
+  Future<String?> getCurrentShopId() async {
+    try {
+      final user = supabase.auth.currentUser;
+      if (user == null) return null;
+
+      final response = await supabase
+          .from('shops')
+          .select('id')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+      return response?['id']?.toString();
+    } catch (e) {
+      print('Error checking shop: $e');
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>?> getShopDetails() async {
+    try {
+      final user = supabase.auth.currentUser;
+      if (user == null) return null;
+
+      final response = await supabase
+          .from('shops')
+          .select('*')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+      return response;
+    } catch (e) {
+      print('Error checking shop: $e');
+      return null;
+    }
   }
 }
