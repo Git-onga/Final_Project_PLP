@@ -5,6 +5,7 @@ class Product {
   final double price;
   final String? description;
   final DateTime createdAt;
+  final String? imageUrl;
 
   Product({
     required this.id,
@@ -13,6 +14,7 @@ class Product {
     required this.price,
     this.description,
     required this.createdAt,
+    required this.imageUrl,
   });
 
   // Convert from Supabase JSON
@@ -24,6 +26,8 @@ class Product {
       price: (json['price'] as num?)?.toDouble() ?? 0.0,
       description: json['description']?.toString(),
       createdAt: DateTime.parse(json['created_at']?.toString() ?? DateTime.now().toIso8601String()),
+      imageUrl: json['image_url']?.toString() ??
+        'https://picsum.photos/100/100?random=1', // fallback image
     );
   }
 
@@ -36,6 +40,7 @@ class Product {
       'price': price,
       'description': description,
       'created_at': createdAt.toIso8601String(),
+      'image_url': imageUrl,
     };
   }
 
@@ -46,6 +51,7 @@ class Product {
     double? price,
     String? description,
     DateTime? createdAt,
+    String? imageUrl,
   }) {
     return Product(
       id: id ?? this.id,
@@ -54,6 +60,7 @@ class Product {
       price: price ?? this.price,
       description: description ?? this.description,
       createdAt: createdAt ?? this.createdAt,
+      imageUrl: imageUrl ?? imageUrl,
     );
   }
 
