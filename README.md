@@ -59,14 +59,6 @@ flutter pub get
 flutter run
 ```
 
----
-
-## License
-
-MIT License © 2025 Varsity-Soko
-
----
-
 ## Contact
 
 For inquiries, reach out to: **[bildadgitonga53@gmail.com](mailto:bildadgitonga53@gmail.com)**
