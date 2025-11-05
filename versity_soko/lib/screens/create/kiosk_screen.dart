@@ -266,7 +266,14 @@ class _KioskScreenState extends State<KioskScreen> with SingleTickerProviderStat
         ),
       );
 
-      print('Product "${product.name}" deleted successfully');
+      _addActivity(
+        Activity(
+          icon: Icons.delete,
+          title: 'Deleted product: ${product.name}',
+          time: DateTime.now(),
+          color: Colors.redAccent,
+        ),
+      );
 
     } catch (e) {
       // Hide loading indicator and show error
@@ -507,11 +514,11 @@ class _KioskScreenState extends State<KioskScreen> with SingleTickerProviderStat
                 CircleAvatar(
                   radius: 30,
                   backgroundColor: Colors.grey[200],
-                  backgroundImage: _selectedImage != null
-                      ? FileImage(_selectedImage!) as ImageProvider
-                      : const AssetImage('assets/default_profile.png'),
-                  child: _selectedImage == null
-                      ? const Icon(Icons.image, size: 30, color: Colors.grey)
+                  backgroundImage: _shopDetails != null
+                      ?  NetworkImage(_shopDetails!.imageUrl!)
+                      : null,
+                  child: _shopDetails == null
+                      ? const Icon(Icons.image, size: 30, color: Colors.purple)
                       : null,
                 ),
 
@@ -786,6 +793,10 @@ class _KioskScreenState extends State<KioskScreen> with SingleTickerProviderStat
 
 
   Widget _buildProfileTab() {
+    if (_shopDetails == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -794,7 +805,7 @@ class _KioskScreenState extends State<KioskScreen> with SingleTickerProviderStat
           const SizedBox(height: 24),
           _buildSectionHeader('Business Hours'),
           const SizedBox(height: 16),
-          _buildBusinessHours(),
+          _buildBusinessHours(_shopDetails!.businessHours),
           const SizedBox(height: 24),
           _buildSectionHeader('Shop Settings'),
           const SizedBox(height: 16),
@@ -804,6 +815,7 @@ class _KioskScreenState extends State<KioskScreen> with SingleTickerProviderStat
       ),
     );
   }
+
 
   // Component Building Methods
   Widget _buildStatCard({
@@ -1458,6 +1470,8 @@ class _KioskScreenState extends State<KioskScreen> with SingleTickerProviderStat
   // }
 
   Widget _buildShopProfileCard() {
+    final deliveryValue = _shopDetails?.delivery?.toString() ?? 'N/A';
+
     return Card(
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -1486,7 +1500,7 @@ class _KioskScreenState extends State<KioskScreen> with SingleTickerProviderStat
             const SizedBox(height: 16),
             Text(
               _shopDetails?.name ?? 'Shop Name',
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
                 color: Colors.black87,
@@ -1495,7 +1509,7 @@ class _KioskScreenState extends State<KioskScreen> with SingleTickerProviderStat
             const SizedBox(height: 8),
             Text(
               _shopDetails?.category ?? 'No category',
-              style: TextStyle(
+              style: const TextStyle(
                 color: Colors.grey,
                 fontSize: 16,
               ),
@@ -1505,7 +1519,7 @@ class _KioskScreenState extends State<KioskScreen> with SingleTickerProviderStat
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 _buildProfileStat('245', 'Followers'),
-                _buildProfileStat(_shopDetails!.delivery.toString(), 'Delivery'),
+                _buildProfileStat(deliveryValue, 'Delivery'),
                 _buildProfileStat("${orderAndProducts.length}", 'Orders'),
               ],
             ),
@@ -1514,6 +1528,7 @@ class _KioskScreenState extends State<KioskScreen> with SingleTickerProviderStat
       ),
     );
   }
+
 
   Widget _buildProfileStat(String value, String label) {
     return Column(
@@ -1607,22 +1622,58 @@ class _KioskScreenState extends State<KioskScreen> with SingleTickerProviderStat
 
   }
 
-  Widget _buildBusinessHours() {
+  Widget _buildBusinessHours(Map<String, dynamic>? businessHours) {
+    if (businessHours == null) {
+      return const Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
+        child: Padding(
+          padding: EdgeInsets.all(16),
+          child: Center(
+            child: Text(
+              'Business hours not set',
+              style: TextStyle(color: Colors.grey),
+            ),
+          ),
+        ),
+      );
+    }
+
+    final openDays = businessHours['open_days'] as Map<String, dynamic>? ?? {};
+    final openTime = businessHours['open_time'] ?? 'N/A';
+    final closeTime = businessHours['close_time'] ?? 'N/A';
+
+    final daysOrder = [
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday',
+    ];
+
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: const Padding(
-        padding: EdgeInsets.all(16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
         child: Column(
-          children: [
-            _BusinessHourRow(day: 'Monday - Friday', hours: '9:00 AM - 6:00 PM'),
-            _BusinessHourRow(day: 'Saturday', hours: '10:00 AM - 4:00 PM'),
-            _BusinessHourRow(day: 'Sunday', hours: 'Closed'),
-          ],
+          children: daysOrder.map((day) {
+            final isOpen = openDays[day] ?? false;
+            return _BusinessHourRow(
+              day: day,
+              isOpen: isOpen,
+              openTime: openTime,
+              closeTime: closeTime,
+            );
+          }).toList(),
         ),
       ),
     );
   }
+
+
 
   Widget _buildActionButton(String text, IconData icon, Color color) {
     return SizedBox(
@@ -1785,6 +1836,15 @@ class _KioskScreenState extends State<KioskScreen> with SingleTickerProviderStat
 
                   await _loadProducts(); // refresh the list
 
+                  _addActivity(
+                    Activity(
+                      color: Colors.indigoAccent, 
+                      icon: Icons.add_box, 
+                      title: 'New Product Added: $name', 
+                      time: DateTime.now()
+                    )
+                  );
+
                   ScaffoldMessenger.of(parentContext).showSnackBar(
                     const SnackBar(
                       content: Text('✅ Product added successfully'),
@@ -1910,12 +1970,8 @@ class _KioskScreenState extends State<KioskScreen> with SingleTickerProviderStat
                                         width: 140,
                                         fit: BoxFit.cover,
                                       )
-                                    : Image.network(
-                                        product.imageUrl ?? 'https://picsum.photos/100/100?random=1',
-                                        height: 140,
-                                        width: 140,
-                                        fit: BoxFit.cover,
-                                      )),
+                                    : const Icon(Icons.shopping_bag_outlined, size: 40, color: Colors.blue)
+                                )
                           ),
 
                           // overlay camera icon
@@ -2097,24 +2153,42 @@ class _KioskScreenState extends State<KioskScreen> with SingleTickerProviderStat
 
 class _BusinessHourRow extends StatelessWidget {
   final String day;
-  final String hours;
+  final bool isOpen;
+  final String? openTime;
+  final String? closeTime;
 
-  const _BusinessHourRow({required this.day, required this.hours});
+  const _BusinessHourRow({
+    required this.day,
+    required this.isOpen,
+    this.openTime,
+    this.closeTime,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final hoursText = isOpen
+        ? '$openTime - $closeTime'
+        : 'Closed';
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(day, style: const TextStyle(fontWeight: FontWeight.w500)),
-          Text(hours, style: TextStyle(color: Colors.grey[600])),
+          Text(
+            hoursText,
+            style: TextStyle(
+              color: isOpen ? Colors.grey[700] : Colors.redAccent,
+              fontWeight: isOpen ? FontWeight.normal : FontWeight.w600,
+            ),
+          ),
         ],
       ),
     );
   }
 }
+
 
 class ShopProfileEditor extends StatefulWidget {
   final TextEditingController nameController;
@@ -2300,7 +2374,7 @@ class _ShopProfileEditorState extends State<ShopProfileEditor> {
       final success = await shopService.updateShopProfile(
         shopId: shopId,
         name: widget.nameController.text.trim(),
-        description: widget.categoryController.text.trim(), // Using category as description
+        category: widget.categoryController.text.trim(), // Using category as description
         profileImageUrl: widget.imageUrlController.text.trim(),
       );
 

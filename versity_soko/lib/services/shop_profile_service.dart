@@ -42,7 +42,7 @@ class ShopProfileService with ChangeNotifier {
   Future<bool> updateShopProfile({
     required String shopId,
     String? name,
-    String? description,
+    String? category,
     String? profileImageUrl,
   }) async {
     try {
@@ -50,9 +50,9 @@ class ShopProfileService with ChangeNotifier {
       notifyListeners();
 
       final updateData = <String, dynamic>{};
-      if (name != null) updateData['name'] = name;
-      if (description != null) updateData['category'] = description;
-      if (profileImageUrl != null) updateData['image_url'] = profileImageUrl;
+      if (name != null && name.isNotEmpty) updateData['name'] = name;
+      if (category!= null && category.isNotEmpty) updateData['category'] = category;
+      if (profileImageUrl != null && profileImageUrl.isNotEmpty) updateData['image_url'] = profileImageUrl;
 
       await _supabase
           .from('shops')
