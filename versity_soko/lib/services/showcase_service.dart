@@ -12,10 +12,8 @@ class ShowcaseService {
           .select('id') // only fetch ID for performance
           .limit(1);
 
-      print('✅ Checked showcases existence');
       return response.isNotEmpty;
     } catch (e) {
-      print('🚨 Error checking showcases: $e');
       return false;
     }
   }
@@ -32,7 +30,6 @@ class ShowcaseService {
       final List showcases = response as List;
       return showcases.map((data) => ShowcaseModel.fromJson(data)).toList();
     } catch (e) {
-      print('🚨 Error fetching showcases: $e');
       return [];
     }
   }
@@ -51,7 +48,6 @@ class ShowcaseService {
 
       return response?['id']?.toString();
     } catch (e) {
-      print('🚨 Error getting user shop: $e');
       return null;
     }
   }
@@ -92,10 +88,8 @@ class ShowcaseService {
       final response =
           await _supabase.from('show_case').insert(insertData).select().single();
 
-      print('✅ Showcase uploaded successfully');
       return ShowcaseModel.fromJson(response);
     } catch (e) {
-      print('🚨 Error uploading showcase: $e');
       return null;
     }
   }

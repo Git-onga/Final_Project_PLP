@@ -86,12 +86,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         const SnackBar(content: Text('✅ Profile image uploaded successfully!')),
       );
 
-      print('🖼️ Image URL: $imageUrl');
     } catch (error) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('❌ Upload failed: $error')),
       );
-      print('❌ Upload failed: $error');
     }
   }
 

@@ -25,7 +25,6 @@ class ProductService with ChangeNotifier {
       final data = response as List<dynamic>;
       return data.map((json) => Product.fromJson(json)).toList();
     } catch (e) {
-      print('Error fetching products: $e');
       throw Exception('Failed to fetch products: $e');
     } finally {
       _setLoading(false);
@@ -41,7 +40,6 @@ class ProductService with ChangeNotifier {
       await _supabase.storage.from('product').upload(filePath, imageFile);
       return _supabase.storage.from('product').getPublicUrl(filePath);
     } catch (e) {
-      print('Error uploading product image: $e');
       return null;
     }
   }
@@ -75,7 +73,6 @@ class ProductService with ChangeNotifier {
 
       return newProduct;
     } catch (e) {
-      print('Error adding product: $e');
       throw Exception('Failed to add product: $e');
     }
   }
@@ -98,7 +95,6 @@ class ProductService with ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
-      print('Error updating product: $e');
       throw Exception('Failed to update product: $e');
     }
   }
@@ -110,7 +106,6 @@ class ProductService with ChangeNotifier {
       _products.removeWhere((product) => product.id == productId);
       notifyListeners();
     } catch (e) {
-      print('Error deleting product: $e');
       throw Exception('Failed to delete product: $e');
     }
   }

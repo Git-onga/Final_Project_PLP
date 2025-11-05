@@ -2,12 +2,16 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/material.dart';
+import '../models/shop_model.dart';
 
 class ShopProfileService with ChangeNotifier {
   final SupabaseClient _supabase = Supabase.instance.client;
 
   Map<String, dynamic>? _shopData;
   Map<String, dynamic>? get shopData => _shopData;
+
+  ShopModel? _shopDetails;
+  ShopModel? get shopDetails => _shopDetails;
 
   bool _loading = false;
   bool get loading => _loading;
@@ -27,9 +31,6 @@ class ShopProfileService with ChangeNotifier {
       _shopData = response;
       return response; // ✅ Return the shop data so other widgets can use it
     } catch (e) {
-      if (kDebugMode) {
-        print('❌ Error fetching shop profile: $e');
-      }
       return null;
     } finally {
       _loading = false;
@@ -44,6 +45,7 @@ class ShopProfileService with ChangeNotifier {
     String? name,
     String? category,
     String? profileImageUrl,
+    bool? delivery, // add this
   }) async {
     try {
       _loading = true;
@@ -53,6 +55,7 @@ class ShopProfileService with ChangeNotifier {
       if (name != null && name.isNotEmpty) updateData['name'] = name;
       if (category!= null && category.isNotEmpty) updateData['category'] = category;
       if (profileImageUrl != null && profileImageUrl.isNotEmpty) updateData['image_url'] = profileImageUrl;
+      if (delivery != null) updateData['delivery'] = delivery;
 
       await _supabase
           .from('shops')
@@ -63,9 +66,6 @@ class ShopProfileService with ChangeNotifier {
       await fetchShopProfile(shopId);
       return true;
     } catch (e) {
-      if (kDebugMode) {
-        print('❌ Error updating shop profile: $e');
-      }
       return false;
     } finally {
       _loading = false;
@@ -104,7 +104,6 @@ class ShopProfileService with ChangeNotifier {
     } catch (e) {
       // Use conditional compilation instead of kDebugMode
       assert(() {
-        print('❌ Error updating shop business hours: $e');
         return true;
       }());
       return false;
@@ -117,9 +116,7 @@ class ShopProfileService with ChangeNotifier {
   // Helper method to validate business hours
   bool _validateBusinessHours(TimeOfDay openTime, TimeOfDay closeTime) {
     if (openTime.hour < 0 || openTime.hour > 23 || closeTime.hour < 0 || closeTime.hour > 23) {
-      if (kDebugMode) {
-        print('❌ Error: Business hours must be between 00:00 and 23:59');
-      }
+      
       return false;
     }
 
@@ -128,9 +125,6 @@ class ShopProfileService with ChangeNotifier {
     final closeInMinutes = closeTime.hour * 60 + closeTime.minute;
     
     if (closeInMinutes <= openInMinutes) {
-      if (kDebugMode) {
-        print('❌ Error: Close time must be after open time');
-      }
       return false;
     }
 
@@ -172,8 +166,6 @@ class ShopProfileService with ChangeNotifier {
 
         // Debug logging
         assert(() {
-          print('✅ Payment methods updated successfully for shop: $shopId');
-          print('📦 Payment details: $paymentDetails');
           return true;
         }());
 
@@ -181,14 +173,11 @@ class ShopProfileService with ChangeNotifier {
 
       } on PostgrestException catch (e) {
         assert(() {
-          print('❌ Database error updating payment methods: ${e.message}');
-          print('Details: ${e.details}');
           return true;
         }());
         return false;
       } catch (e) {
         assert(() {
-          print('❌ Error updating payment methods: $e');
           return true;
         }());
         return false;
@@ -203,26 +192,17 @@ class ShopProfileService with ChangeNotifier {
     const validDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     
     if (openDays.isEmpty) {
-      if (kDebugMode) {
-        print('❌ Error: At least one day must be selected');
-      }
       return false;
     }
 
     for (final day in openDays.keys) {
       if (!validDays.contains(day)) {
-        if (kDebugMode) {
-          print('❌ Error: Invalid day format: $day. Use: $validDays');
-        }
         return false;
       }
     }
 
     // Check if at least one day is open
     if (!openDays.values.any((isOpen) => isOpen)) {
-      if (kDebugMode) {
-        print('❌ Error: At least one day must be open for business');
-      }
       return false;
     }
 
@@ -254,9 +234,7 @@ class ShopProfileService with ChangeNotifier {
 
       return publicUrl;
     } catch (e) {
-      if (kDebugMode) {
-        print('❌ Error uploading profile image: $e');
-      }
+      
       return null;
     }
   }
@@ -267,9 +245,37 @@ class ShopProfileService with ChangeNotifier {
       final path = Uri.parse(imageUrl).pathSegments.skip(1).join('/');
       await _supabase.storage.from('shop_profile').remove([path]);
     } catch (e) {
-      if (kDebugMode) {
-        print('⚠️ Error deleting old image: $e');
+      return;
+    }
+  }
+
+  Future<ShopModel?> getShopById(String shopId) async {
+    try {
+      _loading = true;
+      notifyListeners();
+
+      final response = await _supabase
+          .from('shops')
+          .select()
+          .eq('id', shopId)
+          .maybeSingle(); // ✅ ensures only one record or null
+
+      if (response == null) {
+        return null;
       }
+
+      // ✅ Parse into model
+      final shop = ShopModel.fromJson(response);
+
+      _shopDetails = shop;
+      notifyListeners();
+
+      return shop;
+    } catch (e) {
+      return null;
+    } finally {
+      _loading = false;
+      notifyListeners();
     }
   }
 }
