@@ -6,6 +6,7 @@ import 'package:versity_soko/services/shop_order_service.dart';
 // Providers
 import 'providers/auth_provider.dart';
 import 'providers/product_provider.dart';
+import 'providers/cart_provider.dart';
 
 // Screens
 import 'screens/auth/login_screen.dart';
@@ -43,6 +44,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ProductProvider()),
         ChangeNotifierProvider(create: (_) => NotificationProvider()),
         ChangeNotifierProvider(create: (_) => ShopOrderService()),
+        ChangeNotifierProvider(create: (_) => CartProvider()),
       ],
       child: MaterialApp(
         title: 'Versity Soko',

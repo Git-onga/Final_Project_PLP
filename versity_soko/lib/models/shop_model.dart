@@ -13,6 +13,7 @@ class ShopModel {
   final String? imageUrl;
   final Map<String, dynamic>? paymentMethods;
   final Map<String, dynamic>? businessHours;
+  final int followers;
 
   ShopModel({
     required this.id,
@@ -27,6 +28,7 @@ class ShopModel {
     this.imageUrl,
     this.paymentMethods,
     this.businessHours,
+    required this.followers,
   });
 
   /// ✅ From Supabase JSON
@@ -50,6 +52,7 @@ class ShopModel {
       businessHours: json['business_hours'] != null
           ? Map<String, dynamic>.from(json['business_hours'])
           : {},
+      followers: json['followers'] ?? 0
     );
   }
 
@@ -69,6 +72,7 @@ class ShopModel {
       'image_url': imageUrl,
       'payment_methods': paymentMethods,
       'business_hours': businessHours,
+      'followers': followers,
     };
   }
 }
