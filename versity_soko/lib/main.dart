@@ -29,9 +29,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Supabase.initialize(
-    url: 'https://mpdckqnlcxgkfjcidwso.supabase.co',
-    anonKey:
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1wZGNrcW5sY3hna2ZqY2lkd3NvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE4MDY3NzEsImV4cCI6MjA3NzM4Mjc3MX0.fpZULar3qWOhwChj6b76dNV0jk2nbplH1WzxcS0dm8I',
+   
   );
 
   runApp(
@@ -93,3 +91,4 @@ class MyApp extends StatelessWidget {
     );
   }
 }
+
