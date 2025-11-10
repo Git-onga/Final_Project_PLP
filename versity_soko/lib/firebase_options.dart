@@ -40,49 +40,5 @@ class DefaultFirebaseOptions {
     }
   }
 
-  static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyDVcvYYe-FH40fMLqIWD0vKqJbra0j4KCQ',
-    appId: '1:179094556335:web:736ce2de44a46de0070e5a',
-    messagingSenderId: '179094556335',
-    projectId: 'versity-app-backend',
-    authDomain: 'versity-app-backend.firebaseapp.com',
-    storageBucket: 'versity-app-backend.firebasestorage.app',
-    measurementId: 'G-M1QTJTRKHM',
-  );
-
-  static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyD1OEVHsN6ENtaht5yHxKyxCRb29_ncLT8',
-    appId: '1:179094556335:android:3c822beb1dfd251b070e5a',
-    messagingSenderId: '179094556335',
-    projectId: 'versity-app-backend',
-    storageBucket: 'versity-app-backend.firebasestorage.app',
-  );
-
-  static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyDkxRZHcmM3P0QFBzvKuKJ-DcrmF3TTIxw',
-    appId: '1:179094556335:ios:6742e7c34ddf7200070e5a',
-    messagingSenderId: '179094556335',
-    projectId: 'versity-app-backend',
-    storageBucket: 'versity-app-backend.firebasestorage.app',
-    iosBundleId: 'com.example.versitySoko',
-  );
-
-  static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyDkxRZHcmM3P0QFBzvKuKJ-DcrmF3TTIxw',
-    appId: '1:179094556335:ios:6742e7c34ddf7200070e5a',
-    messagingSenderId: '179094556335',
-    projectId: 'versity-app-backend',
-    storageBucket: 'versity-app-backend.firebasestorage.app',
-    iosBundleId: 'com.example.versitySoko',
-  );
-
-  static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyDVcvYYe-FH40fMLqIWD0vKqJbra0j4KCQ',
-    appId: '1:179094556335:web:fa7024fd12759f86070e5a',
-    messagingSenderId: '179094556335',
-    projectId: 'versity-app-backend',
-    authDomain: 'versity-app-backend.firebaseapp.com',
-    storageBucket: 'versity-app-backend.firebasestorage.app',
-    measurementId: 'G-6BF44CV3SW',
-  );
+  
 }
