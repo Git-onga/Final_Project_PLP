@@ -68,4 +68,4 @@ For PitchDeck presentation see: **[GammaPresentation](https://gamma.app/docs/Var
 
 ## Mobile App apk
 
-Get the andriod app via this link: **Comming Soon😅😅**
+Get the andriod app: **CHECK THE RELEASES FOR THE RECENT VERSION.**
