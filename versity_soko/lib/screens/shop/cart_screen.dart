@@ -12,10 +12,11 @@ class CartScreen extends StatefulWidget {
 }
 
 class _CartScreenState extends State<CartScreen> {
+  bool get isDark => Theme.of(context).brightness == Brightness.dark;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: isDark ? Colors.black : Colors.white,
         appBar: _buildAppBar(),
         body: const CartBody(),
         bottomNavigationBar: const CartBottomBar(),
@@ -26,8 +27,8 @@ class _CartScreenState extends State<CartScreen> {
     return AppBar(
       title: ShaderMask(
         shaderCallback: (bounds) {
-          return const LinearGradient(
-            colors: [
+          return  LinearGradient(
+            colors: isDark ? [Color(0xFFF1EEF6), Color(0xFFE1E6F4)] : [
               Color(0xFF1E88E5), // Blue
               Color(0xFF8E24AA), // Purple
             ],
@@ -44,9 +45,9 @@ class _CartScreenState extends State<CartScreen> {
           ),
         ),
       ),
-      backgroundColor: Colors.white,
+      backgroundColor: isDark ? Colors.black : Colors.white,
       elevation: 1,
-      iconTheme: const IconThemeData(color: Colors.black87),
+      iconTheme: IconThemeData(color: isDark ? Colors.white : Colors.black87),
       actions: [
         Consumer<CartProvider>(
           builder: (context, cartProvider, child) {

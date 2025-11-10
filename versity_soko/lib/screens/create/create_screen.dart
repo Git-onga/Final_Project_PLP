@@ -3,7 +3,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:versity_soko/screens/create/kiosk_screen.dart';
 import '../../providers/shop_provider.dart';
 
-
 class CreateScreen extends StatefulWidget {
   const CreateScreen({super.key});
 
@@ -19,26 +18,33 @@ class _CreateBusinessScreen extends State<CreateScreen> {
   final _provider = ShopProvider();
   final SupabaseClient database = Supabase.instance.client;
 
-  String name = '', desc = '', category = '', email = '', phone = '';
-  bool delivery = false;
+  bool _isToggled = false;
+  String? _selectedCategory;
   bool isLoading = false;
+
+  final List<String> _categories = [
+    'Food & Drinks',
+    'Cloth Store',
+    'Service Provider',
+    'Accessories',
+    'Tutor',
+    'Technology',
+    'Other'
+  ];
 
   void _handleSubmit() async {
     if (_businessNameController.text.isEmpty) {
       _showSnackBar('Please enter your business name');
       return;
     }
-
     if (_phoneController.text.isEmpty) {
       _showSnackBar('Please enter your phone number');
       return;
     }
-
     if (_emailController.text.isEmpty) {
       _showSnackBar('Please enter your email address');
       return;
     }
-
     if (_selectedCategory == null) {
       _showSnackBar('Please select a business category');
       return;
@@ -58,7 +64,6 @@ class _CreateBusinessScreen extends State<CreateScreen> {
 
       _showSnackBar("✅ Shop created successfully");
 
-      // Navigate to kiosk
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const KioskScreen()),
@@ -70,234 +75,186 @@ class _CreateBusinessScreen extends State<CreateScreen> {
     }
   }
 
-  bool _isToggled = false;
-  String? _selectedCategory;
-  
-  final List<String> _categories = [
-    'Food & Drinks',
-    'Cloth Store',
-    'Service Provider',
-    'Accessories',
-    'Turtor',
-    'Technology',
-    'Other'
-  ];
-  
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text(
-          'Set Up Your Shop',
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
+      // Gradient Background
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: isDark
+                ? const [Color(0xFF1E1A33), Color(0xFF2C254A)]
+                : const [Color.fromARGB(255, 241, 238, 246), Color.fromARGB(255, 225, 230, 244)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
         ),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Title Section
-            _buildTitleSection(),
-            
-            const SizedBox(height: 20),
-            
-            // Business Information Section
-            _buildBusinessInfoSection(),
-            
-            const SizedBox(height: 32),
-            
-            // Operation Contacts Section
-            _buildOperationContactsSection(),
-            
-            const SizedBox(height: 32),
-            
-            // Visual Presentation Section
-            _buildVisualPresentationSection(),
-            
-            const SizedBox(height: 40),
-            
-            // Create Profile Button
-            _buildCreateProfileButton(),
-            
-            const SizedBox(height: 20),
-          ],
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildAppBar(isDark),
+                const SizedBox(height: 20),
+                _buildTitleSection(),
+                const SizedBox(height: 20),
+                _buildBusinessInfoSection(isDark),
+                const SizedBox(height: 32),
+                _buildOperationContactsSection(isDark),
+                const SizedBox(height: 32),
+                _buildVisualPresentationSection(isDark),
+                const SizedBox(height: 40),
+                _buildCreateProfileButton(isDark),
+                const SizedBox(height: 20),
+              ],
+            ),
+          ),
         ),
       ),
     );
   }
 
-  // Title Section
+  // ---------------- Components ----------------
+
+  Widget _buildAppBar(bool isDark) {
+    return Row(
+      children: [
+        IconButton(
+          icon: Icon(Icons.arrow_back, color: isDark ? Colors.white : Colors.black),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        Expanded(
+          child: Center(
+            child: Text(
+              'Set Up Your Shop',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : Colors.black,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 48), // Placeholder for alignment
+      ],
+    );
+  }
+
   Widget _buildTitleSection() {
     return const Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Text(
           'Create Your Business Profile',
-          style: TextStyle(
-            fontSize: 25,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold, color: Colors.white),
         ),
         SizedBox(height: 10),
         Text(
           'Provide essential details to get your shop up and running. This information will be visible to your customers.',
+          style: TextStyle(color: Colors.white70),
         ),
       ],
     );
   }
 
-  // Business Information Section
-  Widget _buildBusinessInfoSection() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 10),
-      decoration: BoxDecoration(
-        border: Border.all(color: const Color.fromARGB(255, 212, 210, 210), width: .5),
-        borderRadius: BorderRadius.circular(10),
-      ),
+  Widget _buildBusinessInfoSection(bool isDark) {
+    return _buildSectionContainer(
+      isDark,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 15),
-          _buildSectionHeader('Business Information'),
+          _buildSectionHeader('Business Information', isDark),
           const SizedBox(height: 15),
-          
-          // Logo
           _buildLogoSection(),
           const SizedBox(height: 15),
-          
-          // Business Name
-          _buildFormFieldTitle('Name'),
+          _buildFormFieldTitle('Name', isDark),
           const SizedBox(height: 10),
-          _buildTextField(
-            controller: _businessNameController,
-            hintText: 'Enter your business name',
-            prefixIcon: Icons.business,
-          ),
+          _buildTextField(_businessNameController, 'Enter your business name', Icons.business, isDark),
           const SizedBox(height: 15),
-          
-          // Business Description
-          _buildFormFieldTitle('Business Description'),
+          _buildFormFieldTitle('Business Description', isDark),
           const SizedBox(height: 10),
-          _buildTextField(
-            controller: _descriptionController,
-            hintText: 'Tell your customers about your business',
-            prefixIcon: Icons.description,
-          ),
+          _buildTextField(_descriptionController, 'Tell your customers about your business', Icons.description, isDark),
           const SizedBox(height: 15),
-          
-          // Business Category
-          _buildFormFieldTitle('Business Category'),
+          _buildFormFieldTitle('Business Category', isDark),
           const SizedBox(height: 10),
-          _buildCategoryDropdown(),
+          _buildCategoryDropdown(isDark),
           const SizedBox(height: 15),
         ],
       ),
     );
   }
 
-  // Operation Contacts Section
-  Widget _buildOperationContactsSection() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 10),
-      decoration: BoxDecoration(
-        border: Border.all(color: const Color.fromARGB(255, 212, 210, 210), width: .5),
-        borderRadius: BorderRadius.circular(10),
-      ),
+  Widget _buildOperationContactsSection(bool isDark) {
+    return _buildSectionContainer(
+      isDark,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 15),
-          _buildSectionHeader('Operation Contacts'),
+          _buildSectionHeader('Operation Contacts', isDark),
           const SizedBox(height: 15),
-          
-          // Email Handle
-          _buildFormFieldTitle('Email Handle'),
+          _buildFormFieldTitle('Email Handle', isDark),
           const SizedBox(height: 10),
-          _buildTextField(
-            controller: _emailController,
-            hintText: 'Enter your email address',
-            prefixIcon: Icons.email,
-            keyboardType: TextInputType.emailAddress,
-          ),
+          _buildTextField(_emailController, 'Enter your email address', Icons.email, isDark, keyboardType: TextInputType.emailAddress),
           const SizedBox(height: 15),
-          
-          // Phone Number
-          _buildFormFieldTitle('Phone Number'),
+          _buildFormFieldTitle('Phone Number', isDark),
           const SizedBox(height: 10),
-          _buildTextField(
-            controller: _phoneController,
-            hintText: 'Enter your phone number',
-            prefixIcon: Icons.phone,
-            keyboardType: TextInputType.phone,
-          ),
+          _buildTextField(_phoneController, 'Enter your phone number', Icons.phone, isDark, keyboardType: TextInputType.phone),
           const SizedBox(height: 15),
-          
-          // Delivery Toggle
-          _buildDeliveryToggleSection(),
+          _buildDeliveryToggleSection(isDark),
           const SizedBox(height: 15),
         ],
       ),
     );
   }
 
-  // Visual Presentation Section
-  Widget _buildVisualPresentationSection() {
+  Widget _buildVisualPresentationSection(bool isDark) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildFormFieldTitle('Visual Presentation'),
+        _buildFormFieldTitle('Visual Presentation', isDark),
         const SizedBox(height: 16),
-        _buildImageUploadSection(),
+        _buildImageUploadSection(isDark),
       ],
     );
   }
 
-  // Individual Component Methods
-  Widget _buildSectionHeader(String title) {
+  Widget _buildSectionContainer(bool isDark, {required Widget child}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF2C254A) : Colors.white,
+        border: Border.all(color: isDark ? Colors.grey[700]! : Colors.grey[300]!, width: .5),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: child,
+    );
+  }
+
+  Widget _buildSectionHeader(String title, bool isDark) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-          ),
-        ),
+        Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: isDark ? Colors.white : Colors.black)),
         const SizedBox(height: 10),
-        Container(
-          height: 1,
-          width: double.infinity,
-          color: Colors.grey,
-        ),
+        Container(height: 1, width: double.infinity, color: isDark ? Colors.grey[600] : Colors.grey[400]),
       ],
     );
   }
 
-  Widget _buildFormFieldTitle(String title) {
-    return Text(
-      title,
-      style: const TextStyle(
-        fontSize: 16,
-        fontWeight: FontWeight.w600,
-        color: Colors.black87,
-      ),
-    );
+  Widget _buildFormFieldTitle(String title, bool isDark) {
+    return Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: isDark ? Colors.white70 : Colors.black87));
   }
 
   Widget _buildLogoSection() {
@@ -313,29 +270,16 @@ class _CreateBusinessScreen extends State<CreateScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.add_photo_alternate_outlined,
-              size: 30,
-              color: Colors.grey[500],
-            ),
+            Icon(Icons.add_photo_alternate_outlined, size: 30, color: Colors.grey[500]),
             const SizedBox(height: 8),
-            const Text(
-              'Logo',
-              style: TextStyle(
-                color: Colors.grey,
-                fontSize: 12,
-              ),
-            ),
+            const Text('Logo', style: TextStyle(color: Colors.grey, fontSize: 12)),
             const SizedBox(height: 4),
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 8),
               child: Text(
                 'Add logo, storefront, or Shop brand',
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.grey,
-                  fontSize: 10,
-                ),
+                style: TextStyle(color: Colors.grey, fontSize: 10),
               ),
             ),
           ],
@@ -344,252 +288,111 @@ class _CreateBusinessScreen extends State<CreateScreen> {
     );
   }
 
-  Widget _buildCategoryDropdown() {
+  Widget _buildCategoryDropdown(bool isDark) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.grey[50],
+        color: isDark ? const Color(0xFF3A3559) : Colors.grey[50],
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[400]!),
+        border: Border.all(color: isDark ? Colors.grey[600]! : Colors.grey[400]!),
       ),
       child: DropdownButtonFormField<String>(
         value: _selectedCategory,
-        decoration: const InputDecoration(
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-          hintText: 'Select your business category',
-        ),
-        items: _categories.map((String value) {
-          return DropdownMenuItem<String>(
-            value: value,
-            child: Text(value),
-          );
-        }).toList(),
-        onChanged: (value) {
-          setState(() {
-            _selectedCategory = value;
-          });
-        },
-        icon: const Icon(Icons.arrow_drop_down, color: Colors.grey),
+        decoration: const InputDecoration(border: InputBorder.none, contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16)),
+        items: _categories.map((value) => DropdownMenuItem<String>(value: value, child: Text(value))).toList(),
+        onChanged: (value) => setState(() => _selectedCategory = value),
+        icon: Icon(Icons.arrow_drop_down, color: isDark ? Colors.white70 : Colors.grey),
         isExpanded: true,
       ),
     );
   }
 
-  Widget _buildDeliveryToggleSection() {
+  Widget _buildTextField(TextEditingController controller, String hintText, IconData icon, bool isDark, {TextInputType keyboardType = TextInputType.text}) {
+    return TextField(
+      controller: controller,
+      keyboardType: keyboardType,
+      decoration: InputDecoration(
+        hintText: hintText,
+        prefixIcon: Icon(icon, color: isDark ? Colors.white70 : Colors.grey[600]),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: isDark ? Colors.grey[600]! : Colors.grey[400]!)),
+        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.blue, width: 2)),
+        filled: true,
+        fillColor: isDark ? const Color(0xFF3A3559) : Colors.grey[50],
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      ),
+      style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+    );
+  }
+
+  Widget _buildDeliveryToggleSection(bool isDark) {
     return Row(
       children: [
-        _buildFormFieldTitle('Delivery'),
+        _buildFormFieldTitle('Delivery', isDark),
         const Spacer(),
-        _buildToggleButton(),
+        GestureDetector(
+          onTap: () => setState(() => _isToggled = !_isToggled),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
+            width: 70,
+            height: 35,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(30),
+              color: _isToggled ? Colors.green : Colors.grey,
+            ),
+            child: AnimatedAlign(
+              duration: const Duration(milliseconds: 250),
+              alignment: _isToggled ? Alignment.centerRight : Alignment.centerLeft,
+              child: Container(
+                width: 28,
+                height: 28,
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle, boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 3, offset: const Offset(0, 2))]),
+              ),
+            ),
+          ),
+        ),
       ],
     );
   }
 
-  Widget _buildImageUploadSection() {
+  Widget _buildImageUploadSection(bool isDark) {
     return Column(
       children: [
         Container(
           width: double.infinity,
           height: 150,
           decoration: BoxDecoration(
-            color: Colors.grey[100],
+            color: isDark ? const Color(0xFF3A3559) : Colors.grey[100],
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey[300]!),
+            border: Border.all(color: isDark ? Colors.grey[600]! : Colors.grey[300]!),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.add_photo_alternate_outlined,
-                size: 40,
-                color: Colors.grey[500],
-              ),
+              Icon(Icons.add_photo_alternate_outlined, size: 40, color: isDark ? Colors.white70 : Colors.grey[500]),
               const SizedBox(height: 8),
-              Text(
-                'Upload Business Images',
-                style: TextStyle(
-                  color: Colors.grey[600],
-                  fontSize: 14,
-                ),
-              ),
+              Text('Upload Business Images', style: TextStyle(color: isDark ? Colors.white70 : Colors.grey[600], fontSize: 14)),
               const SizedBox(height: 4),
-              Text(
-                'Add logo, storefront, or product photos',
-                style: TextStyle(
-                  color: Colors.grey[500],
-                  fontSize: 12,
-                ),
-              ),
+              Text('Add logo, storefront, or product photos', style: TextStyle(color: isDark ? Colors.white54 : Colors.grey[500], fontSize: 12)),
             ],
           ),
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            _buildSmallImagePlaceholder(),
-            const SizedBox(width: 8),
-            _buildSmallImagePlaceholder(),
-            const SizedBox(width: 8),
-            _buildSmallImagePlaceholder(),
-          ],
         ),
       ],
     );
   }
 
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String hintText,
-    required IconData prefixIcon,
-    TextInputType keyboardType = TextInputType.text,
-  }) {
-    return TextField(
-      controller: controller,
-      keyboardType: keyboardType,
-      decoration: InputDecoration(
-        hintText: hintText,
-        prefixIcon: Icon(prefixIcon, color: Colors.grey[600]),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey[400]!),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.blue, width: 2),
-        ),
-        filled: true,
-        fillColor: Colors.grey[50],
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      ),
-    );
-  }
-
-  Widget _buildToggleButton() {
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _isToggled = !_isToggled;
-        });
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        width: 70,
-        height: 35,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(30),
-          color: _isToggled ? Colors.green : Colors.grey,
-        ),
-        child: AnimatedAlign(
-          duration: const Duration(milliseconds: 250),
-          alignment: _isToggled ? Alignment.centerRight : Alignment.centerLeft,
-          child: Container(
-            width: 28,
-            height: 28,
-            margin: const EdgeInsets.symmetric(horizontal: 4),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black26,
-                  blurRadius: 3,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSmallImagePlaceholder() {
-    return Container(
-      width: 80,
-      height: 80,
-      decoration: BoxDecoration(
-        color: Colors.grey[200],
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Icon(
-        Icons.add,
-        color: Colors.grey[400],
-      ),
-    );
-  }
-
-  Widget _buildCreateProfileButton() {
+  Widget _buildCreateProfileButton(bool isDark) {
     return SizedBox(
       width: double.infinity,
       height: 56,
       child: ElevatedButton(
-        onPressed:(){
-          _handleSubmit();
-        },
+        onPressed: _handleSubmit,
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.blue,
+          backgroundColor: isDark ? Colors.deepPurpleAccent : Colors.blue,
           foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           elevation: 2,
         ),
-        child: const Text(
-          'Create Business Profile',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _createBusinessProfile() {
-    // Validate form data
-    if (_businessNameController.text.isEmpty) {
-      _showSnackBar('Please enter your business name');
-      return;
-    }
-    
-    if (_phoneController.text.isEmpty) {
-      _showSnackBar('Please enter your phone number');
-      return;
-    }
-
-    if (_emailController.text.isEmpty) {
-      _showSnackBar('Please enter your email address');
-      return;
-    }
-    
-    if (_selectedCategory == null) {
-      _showSnackBar('Please select a business category');
-      return;
-    }
-    
-    // Process the business profile creation
-    final businessData = {
-      'name': _businessNameController.text,
-      'phone': _phoneController.text,
-      'email': _emailController.text,
-      'category': _selectedCategory,
-      'delivery': _isToggled,
-    };
-    
-    print('Business Profile Created: $businessData');
-    
-    // Navigate to KioskScreen
-    Navigator.push(
-      context, 
-      MaterialPageRoute(builder: (context) => const KioskScreen())
-    );
-  }
-
-  void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        duration: const Duration(seconds: 2),
+        child: const Text('Create Business Profile', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
       ),
     );
   }

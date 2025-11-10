@@ -42,16 +42,10 @@ class _KioskScreenState extends State<KioskScreen> with SingleTickerProviderStat
   final TextEditingController _imageUrlController = TextEditingController();
   File? _selectedImage;
   List<ShowcaseModel>? _showcase;
-  final List<Activity> _activities = [
-    // Activity(
-    //   icon: Icons.shopping_cart,
-    //   title: 'Welcome to your shop!',
-    //   time: DateTime.now(),
-    //   color: Colors.blueAccent,
-    // ),
-  ];
+  final List<Activity> _activities = [];
   final _shopService = ShopProfileService();
   bool _hasDelivery = false;
+  bool get isDark => Theme.of(context).brightness == Brightness.dark;
 
 
   @override
@@ -296,7 +290,7 @@ class _KioskScreenState extends State<KioskScreen> with SingleTickerProviderStat
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: isDark ? Colors.black : Colors.grey[50],
       appBar: AppBar(
         title: const Text(
           'My Shop Dashboard',
@@ -310,12 +304,10 @@ class _KioskScreenState extends State<KioskScreen> with SingleTickerProviderStat
         elevation: 0,
         automaticallyImplyLeading: false,
         flexibleSpace: Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [
-                Color(0xFF764BA2),
-                Color(0xFF667EEA),
-              ],
+              colors: isDark ? const [const Color(0xFF1E1A33), const Color(0xFF2C254A)]
+        : const [Color(0xFFF1EEF6), Color(0xFFE1E6F4)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -323,9 +315,9 @@ class _KioskScreenState extends State<KioskScreen> with SingleTickerProviderStat
         ),
         bottom: TabBar(
           controller: _tabController,
-          labelColor: Colors.white,
+          labelColor: isDark ? Colors.white70 : Colors.white,
           unselectedLabelColor: Colors.white70,
-          indicatorColor: Colors.white,
+          indicatorColor: Colors.blue,
           indicatorWeight: 3,
           labelStyle: const TextStyle(fontWeight: FontWeight.w600),
           unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.normal),
@@ -362,11 +354,9 @@ class _KioskScreenState extends State<KioskScreen> with SingleTickerProviderStat
           // Quick Stats Cards
           Container(
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [
-                  Color.fromARGB(255, 241, 238, 246),
-                  Color.fromARGB(255, 225, 230, 244),
-                ],
+              gradient:  LinearGradient(
+                colors: isDark ? [const Color(0xFF1E1A33), const Color(0xFF2C254A)]
+        : [Color(0xFFF1EEF6), Color(0xFFE1E6F4)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -390,19 +380,19 @@ class _KioskScreenState extends State<KioskScreen> with SingleTickerProviderStat
                   backgroundColor: Color(0xFF9C27B0), // Purple accent
                   child: Icon(Icons.photo_library_rounded, color: Colors.white),
                 ),
-                title: const Text(
+                title: Text(
                   "Your Showcases",
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
-                    color: Color(0xFF3C3C3C),
+                    color: isDark ? Colors.grey[300] : const Color(0xFF3C3C3C),
                   ),
                 ),
                 subtitle: Text(
                   _showcase?.isNotEmpty == true
                       ? "You have ${_showcase!.length} active showcase(s)"
                       : "No showcases yet — upload one to engage buyers.",
-                  style: const TextStyle(color: Colors.black54, fontSize: 13),
+                  style: TextStyle(color: isDark ? Colors.grey[300] :Colors.black54, fontSize: 13),
                 ),
               ),
             ),
@@ -436,7 +426,8 @@ class _KioskScreenState extends State<KioskScreen> with SingleTickerProviderStat
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [Colors.purple[50]!, Colors.blue[50]!],
+              colors:isDark? [const Color(0xFF1E1A33), const Color(0xFF2C254A)]
+        : [Color(0xFFF1EEF6), Color(0xFFE1E6F4)],
             ),
           ),
           child: Row(
@@ -772,7 +763,7 @@ class _KioskScreenState extends State<KioskScreen> with SingleTickerProviderStat
 
   Widget _buildProductsTab() {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: isDark ? Colors.black : Colors.grey[100],
       body: _buildProductsList(),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showAddProductDialog(context),
@@ -820,10 +811,10 @@ class _KioskScreenState extends State<KioskScreen> with SingleTickerProviderStat
       children: [
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: Colors.black87,
+            color: isDark ? Colors.grey[300] : Colors.grey[900],
           ),
         ),
       ],
@@ -836,12 +827,12 @@ class _KioskScreenState extends State<KioskScreen> with SingleTickerProviderStat
         elevation: 2,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.all(8),
-        child: const Padding(
+        child: Padding(
           padding: EdgeInsets.all(16),
           child: Center(
             child: Text(
               'No recent activity yet',
-              style: TextStyle(color: Colors.grey),
+              style: TextStyle(color: isDark ? Colors.grey[500] : Colors.grey[600]),
             ),
           ),
         ),
@@ -853,12 +844,10 @@ class _KioskScreenState extends State<KioskScreen> with SingleTickerProviderStat
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       margin: const EdgeInsets.all(8),
       child: Container(
-        decoration: const BoxDecoration(
+        decoration:  BoxDecoration(
           gradient: LinearGradient(
-            colors: [
-              Color.fromARGB(255, 241, 238, 246),
-              Color.fromARGB(255, 225, 230, 244),
-            ],
+            colors: isDark ? [const Color(0xFF1E1A33), const Color(0xFF2C254A)]
+        : [Color(0xFFF1EEF6), Color(0xFFE1E6F4)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -932,11 +921,9 @@ class _KioskScreenState extends State<KioskScreen> with SingleTickerProviderStat
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Container(
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [
-              Color.fromARGB(255, 241, 238, 246),
-              Color.fromARGB(255, 225, 230, 244),
-            ],
+          gradient: LinearGradient(
+            colors:isDark ? [const Color(0xFF1E1A33), const Color(0xFF2C254A)]
+        : [Color(0xFFF1EEF6), Color(0xFFE1E6F4)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -1136,7 +1123,8 @@ class _KioskScreenState extends State<KioskScreen> with SingleTickerProviderStat
       margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Colors.purple[50]!, Colors.blue[50]!],
+          colors: isDark ? [const Color(0xFF1E1A33), const Color(0xFF2C254A)]
+        : [Color(0xFFF1EEF6), Color(0xFFE1E6F4)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -1203,9 +1191,9 @@ class _KioskScreenState extends State<KioskScreen> with SingleTickerProviderStat
                         product.description!.isNotEmpty)
                       Text(
                         product.description!,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
-                          color: Colors.black54,
+                          color: isDark ? Colors.grey[400] : Colors.grey[900],
                         ),
                         maxLines: 3,
                         softWrap: true,
@@ -1270,7 +1258,8 @@ class _KioskScreenState extends State<KioskScreen> with SingleTickerProviderStat
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Colors.purple[50]!, Colors.blue[50]!],
+            colors: isDark ? [const Color(0xFF1E1A33), const Color(0xFF2C254A)]
+        : [Color(0xFFF1EEF6), Color(0xFFE1E6F4)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -1291,10 +1280,10 @@ class _KioskScreenState extends State<KioskScreen> with SingleTickerProviderStat
             const SizedBox(height: 16),
             Text(
               _shopDetails?.name ?? 'Shop Name',
-              style: const TextStyle(
+              style:  TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: Colors.black87,
+                color: isDark ? Colors.grey[300] : Colors.grey[900],
               ),
             ),
             const SizedBox(height: 8),
@@ -1373,10 +1362,19 @@ class _KioskScreenState extends State<KioskScreen> with SingleTickerProviderStat
       {'icon': Icons.payment, 'title': 'Payment Methods', 'color': Colors.orange},
     ];
 
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    return Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: isDark
+                ? [const Color(0xFF1E1A33), const Color(0xFF2C254A)]
+                : [const Color(0xFFF1EEF6), const Color(0xFFE1E6F4)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: const BorderRadius.all(Radius.circular(12)),
+        ),
       child: Column(
+        
         children: settings.map((setting) {
           // Handle Delivery Setting separately
           if (setting['title'] == 'Delivery Settings') {
@@ -1500,10 +1498,18 @@ class _KioskScreenState extends State<KioskScreen> with SingleTickerProviderStat
 
   Widget _buildBusinessHours(Map<String, dynamic>? businessHours) {
     if (businessHours == null) {
-      return const Card(
-        elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
-        child: Padding(
+      return Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: isDark
+                ? [const Color(0xFF1E1A33), const Color(0xFF2C254A)]
+                : [const Color(0xFFF1EEF6), const Color(0xFFE1E6F4)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: const BorderRadius.all(Radius.circular(12)),
+        ),
+        child: const Padding(
           padding: EdgeInsets.all(16),
           child: Center(
             child: Text(
@@ -1514,6 +1520,7 @@ class _KioskScreenState extends State<KioskScreen> with SingleTickerProviderStat
         ),
       );
     }
+
 
     final openDays = businessHours['open_days'] as Map<String, dynamic>? ?? {};
     final openTime = businessHours['open_time'] ?? 'N/A';
@@ -1529,23 +1536,30 @@ class _KioskScreenState extends State<KioskScreen> with SingleTickerProviderStat
       'Sunday',
     ];
 
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: daysOrder.map((day) {
-            final isOpen = openDays[day] ?? false;
-            return _BusinessHourRow(
-              day: day,
-              isOpen: isOpen,
-              openTime: openTime,
-              closeTime: closeTime,
-            );
-          }).toList(),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isDark
+              ? [const Color(0xFF1E1A33), const Color(0xFF2C254A)]
+              : [const Color(0xFFF1EEF6), const Color(0xFFE1E6F4)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
+        borderRadius: const BorderRadius.all(Radius.circular(12)),
       ),
+      child: Column(
+        children: daysOrder.map((day) {
+          final isOpen = openDays[day] ?? false;
+          return _BusinessHourRow(
+            day: day,
+            isOpen: isOpen,
+            openTime: openTime,
+            closeTime: closeTime,
+          );
+        }).toList(),
+      ),
+
     );
   }
 
@@ -1554,9 +1568,18 @@ class _KioskScreenState extends State<KioskScreen> with SingleTickerProviderStat
     final Map<String, dynamic>? pm = _shopDetails?.paymentMethods;
 
     if (pm == null || pm.isEmpty) {
-      return const Card(
-        elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
+      return Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: isDark
+                ? [const Color(0xFF1E1A33), const Color(0xFF2C254A)]
+                : [const Color(0xFFF1EEF6), const Color(0xFFE1E6F4)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: const BorderRadius.all(Radius.circular(12)),
+        ),
+
         child: Padding(
           padding: EdgeInsets.all(16),
           child: Center(
@@ -1602,9 +1625,17 @@ class _KioskScreenState extends State<KioskScreen> with SingleTickerProviderStat
         ));
     }
 
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    return Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: isDark
+                ? [const Color(0xFF1E1A33), const Color(0xFF2C254A)]
+                : [const Color(0xFFF1EEF6), const Color(0xFFE1E6F4)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: const BorderRadius.all(Radius.circular(12)),
+        ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -2160,7 +2191,7 @@ class _BusinessHourRow extends StatelessWidget {
           Text(
             hoursText,
             style: TextStyle(
-              color: isOpen ? Colors.grey[700] : Colors.redAccent,
+              color: isOpen ? Colors.grey[500] : Colors.redAccent,
               fontWeight: isOpen ? FontWeight.normal : FontWeight.w600,
             ),
           ),

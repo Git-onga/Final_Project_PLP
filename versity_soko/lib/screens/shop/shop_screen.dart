@@ -19,6 +19,7 @@ class _ShopScreenState extends State<ShopScreen> {
   final ShopDetailsService _shopService = ShopDetailsService();
   List<ShopModel> _filteredShops = [];  // Shops filtered by category
   int selectedCategoryIndex = 0;      
+  bool get isDark => Theme.of(context).brightness == Brightness.dark;
 
   @override
   void initState() {
@@ -38,7 +39,9 @@ class _ShopScreenState extends State<ShopScreen> {
   @override
 	Widget build(BuildContext context) {
 		return Scaffold(
-		backgroundColor: Colors.white,
+		backgroundColor: isDark
+                ? Colors.black
+                : Colors.white,
 		body: SingleChildScrollView(
       child: SafeArea(
         child: Column(
@@ -72,7 +75,7 @@ class _ShopScreenState extends State<ShopScreen> {
             ShaderMask(
                 shaderCallback: (bounds) {
                   return LinearGradient(
-                    colors: [Colors.blue[700]!, Colors.purple[600]!],
+                    colors: isDark ? [Color.fromARGB(255, 169, 123, 215), Color.fromARGB(255, 126, 146, 237)] : [Colors.blue[700]!, Colors.purple[600]!]  ,
                     begin: Alignment.centerLeft,
                     end: Alignment.centerRight,
                   ).createShader(bounds);
@@ -90,10 +93,12 @@ class _ShopScreenState extends State<ShopScreen> {
             IconButton(
               icon: Container(
                 padding: const EdgeInsets.all(6),
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: LinearGradient(
-                    colors: [
+                    colors: isDark? const [
+                      Color(0xFF1E1A33), Color(0xFF2C254A)
+                    ]:const [
                       Color.fromARGB(255, 241, 238, 246),
                       Color.fromARGB(255, 225, 230, 244),
                     ],
@@ -101,9 +106,9 @@ class _ShopScreenState extends State<ShopScreen> {
                     end: Alignment.bottomRight,
                   ),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.shopping_cart_outlined,
-                  color: Colors.grey, // Keep this neutral to contrast with gradient
+                  color: isDark ? Colors.white : Colors.grey, // Keep this neutral to contrast with gradient
                   size: 20,
                 ),
               ),
@@ -147,7 +152,7 @@ class _ShopScreenState extends State<ShopScreen> {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: Colors.grey[900],
+              color: isDark ? Colors.grey[300] : Colors.grey[900],
             ),
           ),
         ),
@@ -471,12 +476,12 @@ bool _isCategorySimilar(String shopCategory, String selectedCategory) {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 "🔥 Top Shops",
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+                  color: isDark ? Colors.grey[300] :Colors.black87,
                 ),
               ),
               
@@ -518,7 +523,9 @@ bool _isCategorySimilar(String shopCategory, String selectedCategory) {
         width: 160, // Slightly wider for better content
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [
+            colors: isDark ? [
+              const Color(0xFF1E1A33), const Color(0xFF2C254A)
+            ]:[
               const Color.fromARGB(255, 241, 238, 246),
               const Color.fromARGB(255, 225, 230, 244),
             ]
@@ -608,10 +615,10 @@ bool _isCategorySimilar(String shopCategory, String selectedCategory) {
                       Expanded(
                         child: Text(
                           shop.name,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
-                            color: Colors.black87,
+                            color: isDark ? Colors.grey[300] : Colors.black87,
                           ),
                           overflow: TextOverflow.ellipsis,
                           maxLines: 1,
@@ -626,7 +633,7 @@ bool _isCategorySimilar(String shopCategory, String selectedCategory) {
                   Text(
                     shop.category,
                     style: TextStyle(
-                      color: Colors.grey[600],
+                      color: isDark ? Colors.grey[500] : Colors.grey[600],
                       fontSize: 12,
                     ),
                     overflow: TextOverflow.ellipsis,
@@ -760,10 +767,8 @@ bool _isCategorySimilar(String shopCategory, String selectedCategory) {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
         gradient: LinearGradient(
-          colors: [
-            const Color.fromARGB(255, 241, 238, 246),
-            const Color.fromARGB(255, 225, 230, 244),
-          ],
+          colors: isDark ? [const Color(0xFF1E1A33), const Color(0xFF2C254A)]
+        : [Color(0xFFF1EEF6), Color(0xFFE1E6F4)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -776,7 +781,7 @@ bool _isCategorySimilar(String shopCategory, String selectedCategory) {
           ),
         ],
         border: Border.all(
-          color: Colors.grey[100]!,
+          color: Color(0xFF1E1A33),
           width: 1,
         ),
       ),
@@ -818,10 +823,10 @@ bool _isCategorySimilar(String shopCategory, String selectedCategory) {
                               children: [
                                 Text(
                                   shop.name ?? 'Unnamed Shop',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.black87,
+                                    color: isDark ? Colors.grey[300] : Colors.grey[900],
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -831,7 +836,7 @@ bool _isCategorySimilar(String shopCategory, String selectedCategory) {
                                   shop.category ?? 'General Store',
                                   style: TextStyle(
                                     fontSize: 11,
-                                    color: Colors.grey[600],
+                                    color: isDark ? Colors.grey[500] : Colors.grey[600],
                                     fontWeight: FontWeight.w500,
                                   ),
                                   maxLines: 1,

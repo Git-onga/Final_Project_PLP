@@ -42,6 +42,7 @@ class _ShopProfileEditorState extends State<ShopProfileEditor> {
   final shopIdClass = ShopHelper();
   ShopModel? shopDetails; // holds fetched shop details
   // Fetch shop profile
+  bool get isDark => Theme.of(context).brightness == Brightness.dark;
 
   @override
   void initState() {
@@ -376,17 +377,20 @@ class _ShopProfileEditorState extends State<ShopProfileEditor> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: isDark ? Colors.black : Colors.grey[50],
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Shop Profile',
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: isDark ? Colors.grey[300] : Colors.grey[900],
+          ),
         ),
         centerTitle: true,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        backgroundColor: isDark ? Colors.black : Colors.grey[50],
+        foregroundColor: isDark ? Colors.grey[300] : Colors.grey[900],
         elevation: 0,
       ),
-      backgroundColor: Colors.white,
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20.0),
         child: Column(
@@ -397,13 +401,11 @@ class _ShopProfileEditorState extends State<ShopProfileEditor> {
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
+                gradient: LinearGradient(
                   begin: Alignment.centerLeft,
                   end: Alignment.centerRight,
-                  colors: [
-                    Color.fromARGB(255, 241, 238, 246),
-                    Color.fromARGB(255, 225, 230, 244),
-                  ],
+                  colors: isDark? [const Color(0xFF1E1A33), const Color(0xFF2C254A)]
+        : [Color(0xFFF1EEF6), Color(0xFFE1E6F4)],
                 ),
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
@@ -488,13 +490,11 @@ class _ShopProfileEditorState extends State<ShopProfileEditor> {
               padding: const EdgeInsets.all(24),
               margin: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
+                gradient: LinearGradient(
                   begin: Alignment.centerLeft,
                   end: Alignment.centerRight,
-                  colors: [
-                    Color.fromARGB(255, 241, 238, 246),
-                    Color.fromARGB(255, 225, 230, 244),
-                  ],
+                  colors: isDark ? [const Color(0xFF1E1A33), const Color(0xFF2C254A)]
+        : [Color(0xFFF1EEF6), Color(0xFFE1E6F4)],
                 ),
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
@@ -620,6 +620,7 @@ class _BusinessHoursEditorState extends State<BusinessHoursEditor> {
     'Saturday': false,
     'Sunday': false,
   };
+  bool get isDark => Theme.of(context).brightness == Brightness.dark;
 
   Future<void> _pickTime(bool isOpening) async {
     final picked = await showTimePicker(
@@ -627,16 +628,38 @@ class _BusinessHoursEditorState extends State<BusinessHoursEditor> {
       initialTime: isOpening ? _openingTime : _closingTime,
       builder: (BuildContext context, Widget? child) {
         return Theme(
-          data: ThemeData.light().copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Color(0xFF667EEA),
-              secondary: Color(0xFF764BA2),
-              onPrimary: Colors.white,
-            ),
+          data: ThemeData(
+            brightness: isDark ? Brightness.dark : Brightness.light,
+            colorScheme: isDark
+                ? const ColorScheme.dark(
+                    primary: Color(0xFF667EEA),
+                    secondary: Color(0xFF764BA2),
+                    onPrimary: Colors.white,
+                    onSurface: Colors.white,
+                  )
+                : const ColorScheme.light(
+                    primary: Color(0xFF667EEA),
+                    secondary: Color(0xFF764BA2),
+                    onPrimary: Colors.white,
+                    onSurface: Colors.black87,
+                  ),
             timePickerTheme: TimePickerThemeData(
-              backgroundColor: Colors.white,
+              backgroundColor: isDark ? const Color(0xFF2C254A) : Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
+              ),
+              hourMinuteTextColor: isDark ? Colors.white : Colors.black,
+              dialHandColor:
+                  isDark ? const Color(0xFF667EEA) : const Color(0xFF764BA2),
+              dialBackgroundColor:
+                  isDark ? const Color(0xFF1E1A33) : const Color(0xFFF1EEF6),
+            ),
+            textTheme: TextTheme(
+              bodyLarge: TextStyle(
+                color: isDark ? Colors.white : Colors.black,
+              ),
+              bodyMedium: TextStyle(
+                color: isDark ? Colors.white70 : Colors.black87,
               ),
             ),
           ),
@@ -644,6 +667,7 @@ class _BusinessHoursEditorState extends State<BusinessHoursEditor> {
         );
       },
     );
+
     if (picked != null) {
       setState(() {
         if (isOpening) {
@@ -655,16 +679,15 @@ class _BusinessHoursEditorState extends State<BusinessHoursEditor> {
     }
   }
 
+
   Widget _buildTimePickerCard(String title, TimeOfDay time, bool isOpening) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [
-              const Color(0xFF667EEA).withOpacity(0.1),
-              const Color(0xFF764BA2).withOpacity(0.05),
-            ],
+            colors: isDark ? [const Color(0xFF1E1A33), const Color(0xFF2C254A)]
+        : [Color(0xFFF1EEF6), Color(0xFFE1E6F4)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -681,14 +704,14 @@ class _BusinessHoursEditorState extends State<BusinessHoursEditor> {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: Colors.grey[700],
+                color: isDark? Colors.grey[300] : Colors.grey[700],
               ),
             ),
             const SizedBox(height: 8),
             ElevatedButton(
               onPressed: () => _pickTime(isOpening),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
+                backgroundColor: isDark ? Colors.white70 : Colors.white,
                 foregroundColor: const Color(0xFF667EEA),
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 shape: RoundedRectangleBorder(
@@ -730,10 +753,10 @@ class _BusinessHoursEditorState extends State<BusinessHoursEditor> {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? Colors.grey[700] : Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Colors.grey.shade200,
+          // color: isDark ? Colors.grey[700] : Colors.grey.shade200,
           width: 1,
         ),
         boxShadow: [
@@ -751,8 +774,8 @@ class _BusinessHoursEditorState extends State<BusinessHoursEditor> {
           height: 40,
           decoration: BoxDecoration(
             color: isOpen 
-                ? const Color(0xFF4CAF50).withOpacity(0.1)
-                : Colors.grey.withOpacity(0.1),
+                ? isDark ? Color.fromARGB(255, 37, 101, 39) : Color(0xFF4CAF50).withOpacity(0.1)
+                : isDark ? Colors.grey[800] : Colors.grey.withOpacity(0.1),
             shape: BoxShape.circle,
           ),
           child: Icon(
@@ -766,13 +789,13 @@ class _BusinessHoursEditorState extends State<BusinessHoursEditor> {
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
-            color: Colors.grey[800],
+            color: isDark ? Colors.grey[300] : Colors.grey[900],
           ),
         ),
         subtitle: Text(
           isOpen ? 'Open' : 'Closed',
           style: TextStyle(
-            color: isOpen ? const Color(0xFF4CAF50) : Colors.grey,
+            color: isOpen ? isDark ? Color.fromARGB(255, 126, 210, 129) : Color(0xFF4CAF50).withOpacity(0.1) : isDark ? Colors.grey[800] : Colors.grey.withOpacity(0.1) ,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -802,11 +825,11 @@ class _BusinessHoursEditorState extends State<BusinessHoursEditor> {
           fontWeight: FontWeight.bold), 
         ), 
       centerTitle: true, 
-      backgroundColor: Colors.white, 
-      foregroundColor: Colors.black, 
+      backgroundColor: isDark ? Colors.black : Colors.grey[50], 
+      foregroundColor: isDark ? Colors.grey[50] : Colors.black, 
       elevation: 0, 
     ), 
-    backgroundColor: Colors.white,
+    backgroundColor: isDark ? Colors.black : Colors.grey[50],
     body: SafeArea(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -818,13 +841,11 @@ class _BusinessHoursEditorState extends State<BusinessHoursEditor> {
             width: double.infinity,
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
+              gradient:  LinearGradient(
                 begin: Alignment.centerLeft,
                 end: Alignment.centerRight,
-                colors: [
-                  Color.fromARGB(255, 241, 238, 246),
-                  Color.fromARGB(255, 225, 230, 244),
-                ],
+                colors: isDark ? [const Color(0xFF1E1A33), const Color(0xFF2C254A)]
+        : [Color(0xFFF1EEF6), Color(0xFFE1E6F4)],
               ),
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
@@ -858,7 +879,7 @@ class _BusinessHoursEditorState extends State<BusinessHoursEditor> {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: Colors.grey[800],
+                        color: isDark ? Colors.grey[300] : Colors.grey[800],
                       ),
                     ),
                   ],
@@ -867,7 +888,7 @@ class _BusinessHoursEditorState extends State<BusinessHoursEditor> {
                 Row(
                   children: [
                     _buildTimePickerCard('Opening Time', _openingTime, true),
-                    const SizedBox(width: 16),
+                    const SizedBox(width: 13),
                     _buildTimePickerCard('Closing Time', _closingTime, false),
                   ],
                 ),
@@ -891,7 +912,7 @@ class _BusinessHoursEditorState extends State<BusinessHoursEditor> {
                           'Your shop will be open from ${_openingTime.format(context)} to ${_closingTime.format(context)} on selected days',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey[700],
+                            color: isDark ? Colors.grey[500] : Colors.grey[700],
                           ),
                         ),
                       ),
@@ -909,13 +930,11 @@ class _BusinessHoursEditorState extends State<BusinessHoursEditor> {
             width: double.infinity,
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
+              gradient: LinearGradient(
                 begin: Alignment.centerLeft,
                 end: Alignment.centerRight,
-                colors: [
-                  Color.fromARGB(255, 241, 238, 246),
-                  Color.fromARGB(255, 225, 230, 244),
-                ],
+                colors: isDark ? [const Color(0xFF1E1A33), const Color(0xFF2C254A)]
+        : [Color(0xFFF1EEF6), Color(0xFFE1E6F4)],
               ),
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
@@ -949,7 +968,7 @@ class _BusinessHoursEditorState extends State<BusinessHoursEditor> {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: Colors.grey[800],
+                        color: isDark ? Colors.grey[300] : Colors.grey[800],
                       ),
                     ),
                   ],
@@ -1067,6 +1086,7 @@ class _PaymentMethodsSelectorState extends State<PaymentMethodsSelector> {
   final FocusNode _paybillFocusNode = FocusNode();
   final FocusNode _accountFocusNode = FocusNode();
   final FocusNode _pochiFocusNode = FocusNode();
+  bool get isDark => Theme.of(context).brightness == Brightness.dark;
 
   
 
@@ -1092,46 +1112,73 @@ class _PaymentMethodsSelectorState extends State<PaymentMethodsSelector> {
     super.dispose();
   }
 
-  InputDecoration _buildGradientInputDecoration({
+  InputDecoration buildInputDecoration({
     required String labelText,
     required String hintText,
     required bool hasFocus,
+    required bool isDark,
     Widget? prefixIcon,
   }) {
     return InputDecoration(
       labelText: labelText,
       hintText: hintText,
       floatingLabelBehavior: FloatingLabelBehavior.always,
+
+      // Label style changes with focus & theme
       labelStyle: TextStyle(
-        color: hasFocus ? const Color(0xFF4CAF50) : Colors.grey.shade600,
+        color: hasFocus
+            ? const Color(0xFF4CAF50)
+            : (isDark ? Colors.grey.shade300 : Colors.grey.shade600),
         fontWeight: FontWeight.w500,
       ),
-      hintStyle: TextStyle(color: Colors.grey.shade400),
+
+      // Hint text color changes
+      hintStyle: TextStyle(
+        color: isDark ? Colors.grey.shade300 : Colors.grey.shade500,
+      ),
+
+      // Borders adapt to theme
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey.shade300),
+        borderSide: BorderSide(
+          color: isDark ? Colors.grey.shade300 : Colors.grey.shade500,
+        ),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey.shade300),
+        borderSide: BorderSide(
+          color: isDark ? Colors.grey.shade300 : Colors.grey.shade600,
+        ),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFF4CAF50), width: 2),
+        borderSide: BorderSide(
+          color: hasFocus
+              ? const Color(0xFF4CAF50)
+              : (isDark ? Colors.grey.shade500 : Colors.grey.shade300),
+          width: 2,
+        ),
       ),
+
+      // Background color switches with theme
       filled: true,
-      fillColor: Colors.white,
+      fillColor: isDark
+          ? Colors.grey[800] // Dark mode background
+          : Colors.white, // Light mode background
+
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+
       prefixIcon: prefixIcon,
       prefixIconConstraints: const BoxConstraints(minWidth: 60),
     );
   }
 
+
   Widget _buildPaymentMethodCard(String title, String value, IconData icon, Color color) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? Colors.black : Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: _selectedMethod == value 
@@ -1164,7 +1211,7 @@ class _PaymentMethodsSelectorState extends State<PaymentMethodsSelector> {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
-                color: Colors.grey[800],
+                color: isDark ? Colors.grey[600] : Colors.grey[800],
               ),
             ),
           ],
@@ -1198,7 +1245,7 @@ class _PaymentMethodsSelectorState extends State<PaymentMethodsSelector> {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: Colors.grey[800],
+                  color: isDark ? Colors.grey[500] : Colors.grey[800],
                 ),
               ),
             ],
@@ -1208,7 +1255,7 @@ class _PaymentMethodsSelectorState extends State<PaymentMethodsSelector> {
             controller: _mobileNumberController,
             focusNode: _mobileFocusNode,
             keyboardType: TextInputType.phone,
-            decoration: _buildGradientInputDecoration(
+            decoration: buildInputDecoration(
               labelText: 'Mobile Number *',
               hintText: '07XX XXX XXX',
               hasFocus: _mobileFocusNode.hasFocus,
@@ -1223,6 +1270,7 @@ class _PaymentMethodsSelectorState extends State<PaymentMethodsSelector> {
                   ),
                 ),
               ),
+              isDark: isDark,
             ),
           ),
         ],
@@ -1251,7 +1299,7 @@ class _PaymentMethodsSelectorState extends State<PaymentMethodsSelector> {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: Colors.grey[800],
+                  color: isDark ? Colors.grey[500] : Colors.grey[800],
                 ),
               ),
             ],
@@ -1261,11 +1309,12 @@ class _PaymentMethodsSelectorState extends State<PaymentMethodsSelector> {
             controller: _paybillNumberController,
             focusNode: _paybillFocusNode,
             keyboardType: TextInputType.number,
-            decoration: _buildGradientInputDecoration(
+            decoration: buildInputDecoration(
               labelText: 'Paybill Number *',
               hintText: 'Enter paybill number',
               hasFocus: _paybillFocusNode.hasFocus,
               prefixIcon: Icon(Icons.numbers, color: Colors.grey.shade500),
+              isDark: isDark,
             ),
           ),
           const SizedBox(height: 12),
@@ -1273,11 +1322,12 @@ class _PaymentMethodsSelectorState extends State<PaymentMethodsSelector> {
             controller: _accountNumberController,
             focusNode: _accountFocusNode,
             keyboardType: TextInputType.text,
-            decoration: _buildGradientInputDecoration(
+            decoration: buildInputDecoration(
               labelText: 'Account Number *',
               hintText: 'Enter account number',
               hasFocus: _accountFocusNode.hasFocus,
               prefixIcon: Icon(Icons.person, color: Colors.grey.shade500),
+              isDark: isDark,
             ),
           ),
         ],
@@ -1306,7 +1356,7 @@ class _PaymentMethodsSelectorState extends State<PaymentMethodsSelector> {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: Colors.grey[800],
+                  color: isDark ? Colors.grey[500] : Colors.grey[800],
                 ),
               ),
             ],
@@ -1316,7 +1366,7 @@ class _PaymentMethodsSelectorState extends State<PaymentMethodsSelector> {
             controller: _pochiNumberController,
             focusNode: _pochiFocusNode,
             keyboardType: TextInputType.phone,
-            decoration: _buildGradientInputDecoration(
+            decoration: buildInputDecoration(
               labelText: 'Pochi Number *',
               hintText: 'Enter Pochi number',
               hasFocus: _pochiFocusNode.hasFocus,
@@ -1331,6 +1381,7 @@ class _PaymentMethodsSelectorState extends State<PaymentMethodsSelector> {
                   ),
                 ),
               ),
+              isDark: isDark,
             ),
           ),
         ],
@@ -1467,11 +1518,11 @@ class _PaymentMethodsSelectorState extends State<PaymentMethodsSelector> {
           fontWeight: FontWeight.bold), 
         ), 
       centerTitle: true, 
-      backgroundColor: Colors.white, 
-      foregroundColor: Colors.black, 
+      backgroundColor: isDark ? Colors.black : Colors.grey[50],
+      foregroundColor: isDark ? Colors.grey[50] : Colors.black, 
       elevation: 0, 
     ), 
-    backgroundColor: Colors.white,
+    backgroundColor: isDark ? Colors.black : Colors.grey[50],
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
@@ -1486,7 +1537,10 @@ class _PaymentMethodsSelectorState extends State<PaymentMethodsSelector> {
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  gradient: LinearGradient(
+                    colors:  isDark ? const [const Color(0xFF1E1A33), const Color(0xFF2C254A)]
+        : const [Color(0xFFF1EEF6), Color(0xFFE1E6F4)],
+                  ),
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
@@ -1519,7 +1573,7 @@ class _PaymentMethodsSelectorState extends State<PaymentMethodsSelector> {
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
-                            color: Colors.grey[800],
+                            color: isDark ? Colors.grey[300] : Colors.grey[800],
                           ),
                         ),
                       ],

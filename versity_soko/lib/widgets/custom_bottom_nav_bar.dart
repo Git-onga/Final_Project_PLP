@@ -20,6 +20,7 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
   final supabase = Supabase.instance.client;
   bool hasShop = false;
   bool isLoading = true;
+    bool get isDark => Theme.of(context).brightness == Brightness.dark;
 
   @override
   void initState() {
@@ -54,10 +55,10 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF2C254A) : Colors.white,
         border: Border(
           top: BorderSide(
-            color: Colors.grey[300]!,
+            color: isDark ? const Color(0xFF2C254A) : Colors.grey[300]!,
             width: 1,
           ),
         ),
@@ -124,8 +125,8 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
         padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
         decoration: isCenter
           ? BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [
+              gradient: LinearGradient(
+                colors: isDark ?  [Color.fromARGB(255, 213, 196, 242), Color.fromARGB(255, 193, 207, 248)] : [
                   Color(0xFF667EEA),
                   Color(0xFF764BA2),
                 ],
@@ -141,22 +142,23 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
             Icon(
               isActive ? activeIcon : icon,
               color: isCenter
-                  ? Colors.white
-                  : isActive
-                      ? Colors.blue[700]
-                      : Colors.grey[600],
+                  ? (isDark ? const Color(0xFF2C254A) : Colors.white)
+                  : (isActive
+                      ? (isDark ? Colors.blue[300] : Colors.blue[700])
+                      : (isDark ? Colors.grey[300] : Colors.grey[600])),
               size: isCenter ? 24 : 22,
             ),
+
             const SizedBox(height: 4),
             Text(
               label,
               style: TextStyle(
                 fontSize: 10,
                 color: isCenter
-                    ? Colors.white
-                    : isActive
-                        ? Colors.blue[700]
-                        : Colors.grey[600],
+                  ? (isDark ? const Color(0xFF2C254A) : Colors.white)
+                  : (isActive
+                      ? (isDark ? Colors.blue[300] : Colors.blue[700])
+                      : (isDark ? Colors.grey[300] : Colors.grey[600])),
                 fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
               ),
             ),

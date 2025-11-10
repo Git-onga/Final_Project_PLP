@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:versity_soko/screens/shop/shop_detail_screen.dart';
+import 'package:versity_soko/services/shop_follow_service.dart';
 
 class FollowingShopsScreen extends StatefulWidget {
   const FollowingShopsScreen({super.key});
@@ -9,75 +13,14 @@ class FollowingShopsScreen extends StatefulWidget {
 
 class _FollowingShopsScreenState extends State<FollowingShopsScreen> {
   // 🛍️ Enhanced mock followed shops data
-  List<Map<String, dynamic>> followedShops = [
-    {
-      "id": "1",
-      "name": "Infinity Boutique",
-      "logo": "https://picsum.photos/200?random=1",
-      "coverImage": "https://picsum.photos/400/200?random=10",
-      "followers": "2.3k",
-      "products": "124",
-      "rating": 4.7,
-      "category": "Fashion & Apparel",
-      "isFollowing": true,
-      "isLive": true,
-      "lastActive": "2 hours ago",
-    },
-    {
-      "id": "2",
-      "name": "Campus Trends",
-      "logo": "https://picsum.photos/200?random=2",
-      "coverImage": "https://picsum.photos/400/200?random=11",
-      "followers": "1.1k",
-      "products": "89",
-      "rating": 4.3,
-      "category": "Student Fashion",
-      "isFollowing": true,
-      "isLive": false,
-      "lastActive": "5 hours ago",
-    },
-    {
-      "id": "3",
-      "name": "Gadget Hub",
-      "logo": "https://picsum.photos/200?random=3",
-      "coverImage": "https://picsum.photos/400/200?random=12",
-      "followers": "4.8k",
-      "products": "256",
-      "rating": 4.9,
-      "category": "Electronics",
-      "isFollowing": true,
-      "isLive": true,
-      "lastActive": "Live now",
-    },
-    {
-      "id": "4",
-      "name": "Book Haven",
-      "logo": "https://picsum.photos/200?random=4",
-      "coverImage": "https://picsum.photos/400/200?random=13",
-      "followers": "900",
-      "products": "67",
-      "rating": 4.5,
-      "category": "Books & Stationery",
-      "isFollowing": true,
-      "isLive": false,
-      "lastActive": "1 day ago",
-    },
-    {
-      "id": "5",
-      "name": "Artisan Crafts",
-      "logo": "https://picsum.photos/200?random=5",
-      "coverImage": "https://picsum.photos/400/200?random=14",
-      "followers": "1.5k",
-      "products": "45",
-      "rating": 4.8,
-      "category": "Handmade",
-      "isFollowing": false,
-      "isLive": false,
-      "lastActive": "3 days ago",
-    },
-  ];
-
+  List<Map<String, dynamic>> followedShops = [];
+  final ShopFollowService _shopFollowService = ShopFollowService();
   bool _showFollowingOnly = true;
+  bool get isDark => Theme.of(context).brightness == Brightness.dark;
+  bool _loading = false;
+  bool get loading => _loading;
+  final SupabaseClient _supabase = Supabase.instance.client;
+  // final followingProvider = Provider.of<FollowingProvider>(context, listen: false);
 
   void toggleFollow(int index) {
     setState(() {
@@ -85,24 +28,70 @@ class _FollowingShopsScreenState extends State<FollowingShopsScreen> {
     });
   }
 
-  void _unfollowAll() {
-    setState(() {
-      for (var shop in followedShops) {
-        shop["isFollowing"] = false;
+  /// Fetch followed shops and set to followedShops
+  Future<void> loadFollowedShops() async {
+    print('Loading ....');
+    try {
+      setState(() {
+        _loading = true;
+      });
+
+      final user = _supabase.auth.currentUser;
+      if (user == null) {
+        debugPrint("⚠️ No user logged in.");
+        return;
       }
-    });
+
+      // 1️⃣ Fetch list of followed shop IDs
+      final List<String> shopIds =
+          await _shopFollowService.fetchFollowedShops(userId: user.id);
+
+      if (shopIds.isEmpty) {
+        setState(() {
+          followedShops = [];
+        });
+        return;
+      }
+
+      // 2️⃣ Use the service function for each shop ID
+      final List<Map<String, dynamic>> shopDetails = [];
+
+      for (String shopId in shopIds) {
+        final details = await _shopFollowService.getFollowedShopDetails(
+          userId: user.id,
+          shopId: shopId,
+        );
+
+        if (details != null) {
+          shopDetails.add(details);
+        }
+      }
+
+      // 3️⃣ Update state
+      setState(() {
+        followedShops = shopDetails;
+      });
+
+      print('... Loading Complete');
+      print(followedShops);
+    } catch (e) {
+      debugPrint("❌ Error loading followed shops: $e");
+    } finally {
+      setState(() {
+        _loading = false;
+      });
+    }
   }
 
-  List<Map<String, dynamic>> get _filteredShops {
-    if (_showFollowingOnly) {
-      return followedShops.where((shop) => shop["isFollowing"] == true).toList();
-    }
-    return followedShops;
+
+
+  void initState() {
+    super.initState();
+    loadFollowedShops();
   }
 
   @override
   Widget build(BuildContext context) {
-    final filteredShops = _filteredShops;
 
     return Scaffold(
       appBar: AppBar(
@@ -110,291 +99,186 @@ class _FollowingShopsScreenState extends State<FollowingShopsScreen> {
           "Your Followed Shops",
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: isDark ? Colors.black : Colors.white,
         elevation: 1,
-        iconTheme: const IconThemeData(color: Colors.black),
-        actions: [
-          if (_showFollowingOnly && filteredShops.isNotEmpty)
-          IconButton(
-            icon: const Icon(Icons.filter_list),
-            onPressed: () {
-              setState(() {
-                _showFollowingOnly = !_showFollowingOnly;
-              });
-            },
-            tooltip: 'Show all shops',
-          ),
-        ],
+        iconTheme:  IconThemeData(color: isDark ? Colors.grey[300] : Colors.black),
+        
       ),
-      backgroundColor: Colors.grey[50],
-      body: Column(
-        children: [
-          // 🔘 Filter Chip Section
-          Container(
-            color: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            child: Row(
-              children: [
-                FilterChip(
-                  label: Text(
-                    'Following (${followedShops.where((shop) => shop["isFollowing"] == true).length})',
-                  ),
-                  selected: _showFollowingOnly,
-                  onSelected: (selected) {
-                    setState(() {
-                      _showFollowingOnly = selected;
-                    });
-                  },
-                  backgroundColor: Colors.grey[100],
-                  selectedColor: Colors.blue[50],
-                  checkmarkColor: Colors.blue,
-                  labelStyle: TextStyle(
-                    color: _showFollowingOnly ? Colors.blue : Colors.grey[700],
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                FilterChip(
-                  label: Text(
-                    'All Shops (${followedShops.length})',
-                  ),
-                  selected: !_showFollowingOnly,
-                  onSelected: (selected) {
-                    setState(() {
-                      _showFollowingOnly = !selected;
-                    });
-                  },
-                  backgroundColor: Colors.grey[100],
-                  selectedColor: Colors.blue[50],
-                  checkmarkColor: Colors.blue,
-                  labelStyle: TextStyle(
-                    color: !_showFollowingOnly ? Colors.blue : Colors.grey[700],
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // 📱 Shop List
-          Expanded(
-            child: filteredShops.isEmpty
-                ? _buildEmptyState()
-                : ListView.builder(
-                    padding: const EdgeInsets.all(12),
-                    itemCount: filteredShops.length,
-                    itemBuilder: (context, index) {
-                      final shop = filteredShops[index];
-                      return _buildShopCard(shop, index);
-                    },
-                  ),
-          ),
-        ],
-      ),
-
-      // 🚀 Floating Action Button for bulk actions
-      floatingActionButton: _showFollowingOnly && filteredShops.isNotEmpty
-          ? FloatingActionButton.extended(
-              onPressed: _unfollowAll,
-              icon: const Icon(Icons.person_remove, size: 20),
-              label: const Text("Unfollow All"),
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-            )
-          : null,
+      backgroundColor: isDark? Colors.black : Colors.grey[50],
+      body: ListView.builder(
+        itemCount: followedShops.length,
+        padding: const EdgeInsets.all(16),
+        itemBuilder: (context, index) {
+          return _buildShopCard(index);
+        },
+      )
     );
+
+      
   }
 
-  Widget _buildShopCard(Map<String, dynamic> shop, int originalIndex) {
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+  Widget _buildShopCard(int index) {
+    final shop = followedShops[index];
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isDark
+              ? const [Color(0xFF1E1A33), Color(0xFF2C254A)]
+              : const [Color(0xFFF1EEF6), Color(0xFFE1E6F4)],
+        ),
+        borderRadius: const BorderRadius.all(Radius.circular(16)),
       ),
-      elevation: 3,
       child: InkWell(
-        onTap: () {
-          // Navigate to shop profile / showcase
-          _navigateToShopProfile(shop);
-        },
+        onTap: () => _navigateToShopProfile(shop),
         borderRadius: BorderRadius.circular(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 🖼️ Cover Image with Live Indicator
-            Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(16),
-                    topRight: Radius.circular(16),
-                  ),
-                  child: Image.network(
-                    shop["coverImage"],
-                    height: 100,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    loadingBuilder: (context, child, progress) {
-                      if (progress == null) return child;
-                      return Container(
-                        height: 100,
-                        color: Colors.grey[200],
-                        child: const Center(
-                          child: CircularProgressIndicator(),
-                        ),
-                      );
-                    },
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        height: 100,
-                        color: Colors.grey[200],
-                        child: const Icon(Icons.store, size: 40, color: Colors.grey),
-                      );
-                    },
-                  ),
-                ),
-                if (shop["isLive"] == true)
-                  Positioned(
-                    top: 8,
-                    left: 8,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.red,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.circle, color: Colors.white, size: 8),
-                          SizedBox(width: 4),
-                          Text(
-                            "LIVE",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-              ],
+            // 🖼️ Shop Image
+            ClipRRect(
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(16),
+                topRight: Radius.circular(16),
+              ),
+              child: Image.network(
+                shop["image_url"] ?? "",
+                height: 120,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    height: 120,
+                    color: Colors.grey[300],
+                    child: const Icon(Icons.store, size: 40, color: Colors.grey),
+                  );
+                },
+              ),
             ),
 
-            // 📋 Shop Info
+            // 📋 Shop Info Section
             Padding(
               padding: const EdgeInsets.all(16),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 🎪 Logo with Verified Badge
-                  Stack(
-                    children: [
-                      CircleAvatar(
-                        backgroundImage: NetworkImage(shop["logo"]),
-                        radius: 24,
-                      ),
-                      if (shop["rating"] >= 4.5)
-                        Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: Container(
-                            padding: const EdgeInsets.all(2),
-                            decoration: const BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.verified,
-                              color: Colors.blue,
-                              size: 12,
-                            ),
-                          ),
-                        ),
-                    ],
+                  // 🏪 Shop Icon / Avatar
+                  CircleAvatar(
+                    backgroundImage: NetworkImage(shop["image_url"] ?? ""),
+                    radius: 24,
+                    backgroundColor: Colors.grey[200],
                   ),
                   const SizedBox(width: 12),
 
-                  // 📝 Shop Details
+                  // 📝 Details
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // 🔤 Name + Category
+                        Text(
+                          shop["name"] ?? "Unnamed Shop",
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          shop["category"] ?? "Unknown Category",
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 13,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+
+                        const SizedBox(height: 8),
+
+                        // 👥 Followers + Delivery
                         Row(
                           children: [
-                            Text(
-                              shop["name"],
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                              ),
-                            ),
+                            Icon(Icons.people, size: 14, color: Colors.grey[600]),
                             const SizedBox(width: 4),
-                            Icon(
-                              Icons.star,
-                              color: Colors.amber[600],
-                              size: 16,
-                            ),
                             Text(
-                              shop["rating"].toString(),
+                              "${shop["followers"] ?? 0} followers",
                               style: TextStyle(
                                 color: Colors.grey[700],
                                 fontSize: 12,
-                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Icon(Icons.local_shipping,
+                                size: 14, color: Colors.grey[600]),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                (shop["delivery"] ?? false)
+                                    ? "Delivery available"
+                                    : "No delivery",
+                                style: TextStyle(
+                                  color: Colors.grey[700],
+                                  fontSize: 12,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          shop["category"],
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 12,
+
+                        const SizedBox(height: 8),
+
+                        // 🕒 Business Hours
+                        if (shop["business_hours"] != null)
+                          Text(
+                            "Open: ${shop["business_hours"]["open_time"] ?? 'N/A'} - ${shop["business_hours"]["close_time"] ?? 'N/A'}",
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 12,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Text(
-                              "${shop["followers"]} followers",
-                              style: TextStyle(
-                                color: Colors.grey[600],
-                                fontSize: 11,
-                              ),
+
+                        const SizedBox(height: 6),
+
+                        // 💳 Payment Method
+                        if (shop["payment_methods"] != null)
+                          Text(
+                            "Payment: ${shop["payment_methods"]["method"] ?? 'N/A'} (${shop["payment_methods"]["paybill_number"] ?? ''})",
+                            style: TextStyle(
+                              color: Colors.grey[700],
+                              fontSize: 12,
                             ),
-                            const SizedBox(width: 8),
-                            Text(
-                              "•",
-                              style: TextStyle(color: Colors.grey[400]),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              "${shop["products"]} products",
-                              style: TextStyle(
-                                color: Colors.grey[600],
-                                fontSize: 11,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          shop["isLive"] ? "Live now" : "Active ${shop["lastActive"]}",
-                          style: TextStyle(
-                            color: shop["isLive"] ? Colors.red : Colors.green,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w500,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        ),
                       ],
                     ),
                   ),
 
-                  // 🔘 Follow Button
-                  _buildFollowButton(shop, originalIndex),
+                  // 🔘 Follow/Unfollow Button
+                  SizedBox(
+                    height: 36,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                ShopDetailScreen(shopId: shop['id']),
+                          ),
+                        );
+                      },
+                      child: const Text(
+                        "View Shop",
+                        style: TextStyle(fontSize: 12),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -404,50 +288,53 @@ class _FollowingShopsScreenState extends State<FollowingShopsScreen> {
     );
   }
 
-  Widget _buildFollowButton(Map<String, dynamic> shop, int originalIndex) {
-    return Column(
-      children: [
-        ElevatedButton(
-          onPressed: () => toggleFollow(originalIndex),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: shop["isFollowing"] ? Colors.grey[100] : Colors.blue,
-            foregroundColor: shop["isFollowing"] ? Colors.grey[700] : Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-              side: BorderSide(
-                color: shop["isFollowing"] ? Colors.grey[300]! : Colors.blue,
-              ),
-            ),
-            elevation: 0,
-          ),
-          child: Text(
-            shop["isFollowing"] ? "Following" : "Follow",
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-          ),
-        ),
-        if (shop["isFollowing"])
-          TextButton(
-            onPressed: () {
-              // Show shop showcase
-              _showShopShowcase(shop);
-            },
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              minimumSize: Size.zero,
-            ),
-            child: Text(
-              "View Shop",
-              style: TextStyle(
-                color: Colors.blue[600],
-                fontSize: 10,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-      ],
-    );
-  }
+
+
+
+  // Widget _buildFollowButton(Map<String, dynamic> shop, int originalIndex) {
+  //   return Column(
+  //     children: [
+  //       ElevatedButton(
+  //         onPressed: () => toggleFollow(originalIndex),
+  //         style: ElevatedButton.styleFrom(
+  //           backgroundColor: shop["isFollowing"] ? Colors.grey[100] : Colors.blue,
+  //           foregroundColor: shop["isFollowing"] ? Colors.grey[700] : Colors.white,
+  //           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+  //           shape: RoundedRectangleBorder(
+  //             borderRadius: BorderRadius.circular(20),
+  //             side: BorderSide(
+  //               color: shop["isFollowing"] ? Colors.grey[300]! : Colors.blue,
+  //             ),
+  //           ),
+  //           elevation: 0,
+  //         ),
+  //         child: Text(
+  //           shop["isFollowing"] ? "Following" : "Follow",
+  //           style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+  //         ),
+  //       ),
+  //       // if (shop["isFollowing"])
+  //         TextButton(
+  //           onPressed: () {
+  //             // Show shop showcase
+  //             _showShopShowcase(shop);
+  //           },
+  //           style: TextButton.styleFrom(
+  //             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+  //             minimumSize: Size.zero,
+  //           ),
+  //           child: Text(
+  //             "View Shop",
+  //             style: TextStyle(
+  //               color: Colors.blue[600],
+  //               fontSize: 10,
+  //               fontWeight: FontWeight.w500,
+  //             ),
+  //           ),
+  //         ),
+  //     ],
+  //   );
+  // }
 
   Widget _buildEmptyState() {
     return Center(

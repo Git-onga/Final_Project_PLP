@@ -19,13 +19,15 @@ class RetrieveEventDetails {
         final map = Map<String, dynamic>.from(event);
         return EventModel.fromJson(map);
       }).toList();
-
+      print('📊📊 Fetching events: $events');
       return events;
     } catch (e) {
       print('❌ Error fetching events: $e');
       return [];
     }
   }
+
+  
 
 
   /// ✅ Print shops (for debugging)

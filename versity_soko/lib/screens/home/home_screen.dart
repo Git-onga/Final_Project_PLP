@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:versity_soko/providers/notification_provider.dart';
-// import '../../providers/product_provider.dart';
-import 'package:carousel_slider/carousel_slider.dart';
+import 'package:versity_soko/services/notification_service.dart';
+import 'package:versity_soko/services/show_case_service.dart';
 import '../home/show_case.dart';
 import '../home/following_screen.dart';
 import '../profile/profile_screen.dart';
 import '../home/notification_screen.dart';
-import '../../models/product_model.dart';
 import '../../models/event_model.dart';
-import '../home/event_details.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../services/database_service.dart';
 import '../../services/retrieve_event_details.dart';
@@ -24,26 +22,84 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final SupabaseClient supabase = Supabase.instance.client;
+  final RetrieveEventDetails _eventService = RetrieveEventDetails();
+  final ShowCaseService _showCaseService = ShowCaseService();
+  final ScrollController _scrollController = ScrollController();
 
   List<EventModel> events = [];
+  List<EventModel> currentWeekEvents = [];
+  List<Map<String, dynamic>> studentHighlights = [];
   bool _loading = true;
+  bool _showHeader = true;
+  double _lastScrollOffset = 0;
   String? userName;
-  final RetrieveEventDetails _eventService = RetrieveEventDetails();
   String? _profileImage;
+  late Future<List<Map<String, dynamic>>> _showcaseFuture;
 
-	@override
+  @override
   void initState() {
     super.initState();
     _fetchEvents();
+    _showcaseFuture = _fetchShowCase();
     _fetchUserProfile();
+    _fetchHighlightDetails();
+    _setupScrollListener();
+    final provider = Provider.of<NotificationProvider>(context, listen: false);
+    final service = NotificationService(notificationProvider: provider);
+    service.listenForNewNotifications();
+  }
+
+  void _setupScrollListener() {
+    _scrollController.addListener(() {
+      final currentOffset = _scrollController.offset;
+
+      if (currentOffset > _lastScrollOffset && currentOffset > 100) {
+        if (_showHeader) setState(() => _showHeader = false);
+      } else if (currentOffset < _lastScrollOffset && currentOffset <= 100) {
+        if (!_showHeader) setState(() => _showHeader = true);
+      }
+
+      _lastScrollOffset = currentOffset;
+    });
+  }
+
+  Future<List<Map<String, dynamic>>> _fetchShowCase() async {
+    final user = supabase.auth.currentUser;
+    if (user == null) return [];
+
+    try {
+      final showcases = await _showCaseService.fetchShowcases(user.id);
+      return showcases;
+    } catch (e) {
+      print('❌ Error fetching showcases: $e');
+      return [];
+    }
   }
 
   Future<void> _fetchEvents() async {
-    final fetchedEvents = await _eventService.getWeekEvents();
-    setState(() {
-      events = fetchedEvents;
-      _loading = false;
-    });
+    try {
+      final fetchedEvents = await _eventService.getWeekEvents();
+      setState(() {
+        events = fetchedEvents;
+        currentWeekEvents = getCurrentWeekEvents(fetchedEvents);
+        _loading = false;
+      });
+    } catch (e) {
+      print('Error fetching events: $e');
+      setState(() => _loading = false);
+    }
+  }
+
+  List<EventModel> getCurrentWeekEvents(List<EventModel> events) {
+    final now = DateTime.now();
+    final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+    final endOfWeek = startOfWeek.add(const Duration(days: 6));
+
+    return events.where((event) {
+      final eventDate = DateTime.parse(event.scheduleDate);
+      return eventDate.isAfter(startOfWeek.subtract(const Duration(days: 1))) &&
+          eventDate.isBefore(endOfWeek.add(const Duration(days: 1)));
+    }).toList();
   }
 
   Future<void> _fetchUserProfile() async {
@@ -54,16 +110,11 @@ class _HomeScreenState extends State<HomeScreen> {
       final name = await dbService.loadName();
       final data = await authService.fetchUserProfile();
 
-
-      if (name != null) {
-        setState(() {
-          userName = name['name'] as String?;
-          _profileImage = data?['avatar_url'] as String?;
-          _loading = false;
-        });
-      } else {
-        setState(() => _loading = false);
-      }
+      setState(() {
+        userName = name?['name'] as String?;
+        _profileImage = data?['avatar_url'] as String?;
+        _loading = false;
+      });
     } catch (e) {
       setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -75,1055 +126,597 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _fetchHighlightDetails() async {
+    try {
+      final response = await supabase
+          .from('student_highlights')
+          .select('*')
+          .order('created_at', ascending: false);
+
+      final highlights = (response as List<dynamic>)
+          .map<Map<String, dynamic>>((item) => {
+                'id': item['id'],
+                'title': item['title'] ?? 'Untitled Highlight',
+                'description': item['description'] ?? '',
+                'image_url': item['image_url'] ?? 'https://picsum.photos/200?random=7',
+                'category': item['category'] ?? 'General',
+                'likes': item['likes'] ?? 0,
+                'comment_count': item['comment_count'] ?? 0,
+                'created_at': DateTime.parse(item['created_at']),
+              })
+          .toList();
+
+      setState(() => studentHighlights = highlights);
+    } catch (e) {
+      print('Error fetching highlight details: $e');
+    }
+  }
+
   String getGreetingTime() {
-    final now = DateTime.now();
-    final hour = now.hour;
-
-    if (hour >= 5 && hour < 12) {
-      return 'morning';
-    } else if (hour >= 12 && hour < 17) {
-      return 'afternoon';
-    } else if (hour >= 17 && hour < 21) {
-      return 'evening';
-    } else {
-      return 'night';
-    }
+    final hour = DateTime.now().hour;
+    if (hour >= 5 && hour < 12) return 'morning';
+    if (hour >= 12 && hour < 17) return 'afternoon';
+    if (hour >= 17 && hour < 21) return 'evening';
+    return 'night';
   }
 
-  String get greetings => getGreetingTime();
-
-	@override
-	Widget build(BuildContext context) {
-    if (_loading) {
-        return const Center(child: CircularProgressIndicator());
-    }
-
-    return Scaffold(
-        body: SafeArea(
-            child: _loading
-                ? const Center(child: CircularProgressIndicator())
-                : SingleChildScrollView(
-                    scrollDirection: Axis.vertical,
-                    padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10),
-                    child: Column(
-                        children: [
-                            // Header section
-                            _headerSection(),
-                            const SizedBox(height: 15),
-                            // Sponsor Banner
-                            OffersBanner(),
-                            // Event Section
-                            const SizedBox(height: 25),
-                            // Following section
-                            Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                    // Section header
-                                    Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                        children: [
-                                            Text(
-                                                'Show Case',
-                                                style: TextStyle(
-                                                    fontSize: 16,
-                                                    fontWeight: FontWeight.bold,
-                                                    color: Colors.grey[800],
-                                                ),
-                                            ),
-                                            const Spacer(),
-                                            Container(
-                                                decoration: BoxDecoration(
-                                                    color: Colors.lightBlue.shade50,
-                                                    borderRadius: BorderRadius.circular(20)
-                                                ),
-                                                child: TextButton(
-                                                    onPressed: () {
-                                                        Navigator.push(
-                                                            context,
-                                                            MaterialPageRoute(builder: (context) => const FollowingShopsScreen()),
-                                                        );
-                                                    },
-                                                    child: const Text('Following', style: TextStyle(fontSize: 12))
-                                                ),
-                                            )
-                                        ],
-                                    ),
-                                    const SizedBox(height: 12),
-                                    // Horizontal scrollable stories
-                                    SizedBox(
-                                        height: 100, // Fixed height for stories
-                                        child: ListView(
-                                            scrollDirection: Axis.horizontal,
-                                            children: const [
-                                                SizedBox(width: 4),
-                                                ShopStoryItem(
-                                                    shopName: 'Infinity',
-                                                    hasNewContent: true, // Gradient outline for new content
-                                                ),
-                                                ShopStoryItem(
-                                                    shopName: 'Nike Store',
-                                                    hasNewContent: true,
-                                                ),
-                                                ShopStoryItem(
-                                                    shopName: 'Tech Hub',
-                                                    hasNewContent: true, // No gradient - already seen
-                                                ),
-                                                ShopStoryItem(
-                                                    shopName: 'Book World',
-                                                    hasNewContent: false,
-                                                ),
-                                                ShopStoryItem(
-                                                    shopName: 'Cafe Brew',
-                                                    hasNewContent: false,
-                                                ),
-                                                ShopStoryItem(
-                                                    shopName: 'Style Zone',
-                                                    hasNewContent: true,
-                                                ),
-                                                SizedBox(width: 4),
-                                            ],
-                                        ),
-                                    ),
-                                ],
-                            ),
-                            const SizedBox(height: 25),
-                            // Events
-                            Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                    // Section title
-                                    Text(
-                                        'This Week',
-                                        style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.grey[800],
-                                        ),
-                                    ),
-                                    const SizedBox(height: 16),
-                                    _buildEventCard(events),
-                                    const SizedBox(height: 16),
-                                    Text(
-                                        'Recommended Products',
-                                        style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.grey[800],
-                                        ),
-                                    ),
-                                    const SizedBox(height: 16),
-                                    
-                                    // Masonry-style grid with vertical spans
-                                    _buildRegularProductCard(),
-                                ],
-                            )
-                        ],
-                    ),
-                ),
-        ),
-    );
-}
-	
-  Widget _buildEventCard(List<EventModel> events) {
-    if (events.isEmpty) {
-      return const Center(child: Text("No events available."));
-    }
-    return SizedBox(
-      height: 320, // overall height for each card row
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: events.length,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        itemBuilder: (context, index) {
-          final event = events[index];
-
-          return GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => EventDetailScreen(event: event),
-                ),
-              );
-            },
-            child: Container(
-              width: 250, // card width for horizontal layout
-              margin: const EdgeInsets.only(right: 16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.15),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Image Section
-                  Stack(
-                    children: [
-                      ClipRRect(
-                        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                        child: Image.network(
-                          event.imageUrl,
-                          fit: BoxFit.cover,
-                          width: double.infinity,
-                          height: 160,
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return Container(
-                              height: 140,
-                              color: Colors.grey[200],
-                              child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-                            );
-                          },
-                        ),
-                      ),
-                      Container(
-                        height: 140,
-                        decoration: BoxDecoration(
-                          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.transparent,
-                              Colors.black.withOpacity(0.3),
-                            ],
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        top: 10,
-                        left: 10,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: event.isFree ? Colors.green : Colors.orange,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            event.isFree ? 'FREE' : 'PAID',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        bottom: 10,
-                        left: 10,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.9),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            event.scheduleDate,
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  // Text Section
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.all(10),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            event.title,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              Icon(Icons.location_on_outlined, size: 12, color: Colors.grey[600]),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: Text(
-                                  event.location,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey[600],
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              Icon(Icons.access_time, size: 12, color: Colors.grey[600]),
-                              const SizedBox(width: 4),
-                              Text(
-                                '${event.startTime} - ${event.endTime}',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                            ],
-                          ),
-                          const Spacer(),
-                          Row(
-                            children: [
-                             Expanded(
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                                  decoration: BoxDecoration(
-                                    color: Colors.purple[50],
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Text(
-                                    event.category, // now a single string
-                                    style: TextStyle(
-                                      color: Colors.purple[700],
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              ElevatedButton(
-                                onPressed: () {
-                                  if (event.ticketLink != null) {
-                                    _showBookingDialog(event);
-                                  } else {
-                                    _showInterestDialog(event);
-                                  }
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: event.isFree ? Colors.green : Colors.blue,
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                ),
-                                child: Text(
-                                  event.isFree ? 'Join' : 'Tickets',
-                                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
+  void _navigateToHighlightDetail(Map<String, dynamic> highlight) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => HighlightDetailScreen(highlight: highlight),
       ),
     );
   }
 
-  Widget _headerSection() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        InkWell(
-          onTap: () {
-            // Navigate or perform an action
-            Navigator.push(
-              context, 
-              MaterialPageRoute(builder: (context) => const ProfileScreen()),
-            );
-          },
-          borderRadius: BorderRadius.circular(12.0),
-          child: Container(
-            width: 180,
-            height: 60,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  const Color.fromARGB(255, 241, 238, 246),
-                  const Color.fromARGB(255, 225, 230, 244),
-                ]
-              ),
-              borderRadius: BorderRadius.circular(12.0),
-            ),
-            child: Padding(
-              padding: EdgeInsets.all(8),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 28,
-                    backgroundImage: _profileImage != null && _profileImage!.isNotEmpty
-                        ? NetworkImage(_profileImage!) as ImageProvider
-                        : null,
-                    child: _profileImage == null || _profileImage!.isEmpty
-                        ? const Icon(Icons.person, size: 28, color: Colors.grey)
-                        : null,
-                  ),
-
-                  SizedBox(width: 10),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        userName ?? 'User Name',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                      Text(
-                        "Good $greetings",
-                        style: TextStyle(
-                          fontSize: 10,
-                        ),
-                      )
-                    ],
-                  )
-                ],
-              ),
-            ),
-          ),
-        ),
-         
-        Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            gradient: LinearGradient(
-              colors: [
-                const Color.fromARGB(255, 241, 238, 246),
-                const Color.fromARGB(255, 225, 230, 244),
-              ]
-            ),
-            boxShadow:[
-            BoxShadow(
-              color: Colors.grey.withOpacity(.3),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ], 
-          ),
-          child: _notificationIndicator()
-        ),
-      ],
-      
-    );
-    
-  }
-  
-  Widget _notificationIndicator() {
-    final hasUnread = context.watch<NotificationProvider>().hasUnread;
-
-    return Stack(
-      children: [
-        IconButton(
-          icon: const Icon(Icons.notifications_outlined),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const NotificationScreen()),
-            );
-          },
-        ),
-        if (hasUnread)
-          Positioned(
-            right: 10,
-            top: 10,
-            child: Container(
-              width: 10,
-              height: 10,
-              decoration: const BoxDecoration(
-                color: Colors.red,
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-
-  // Helper methods for dialogs
-  void _showBookingDialog(EventModel event) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(event.title),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text("Date: ${event.scheduleDate}"),
-            Text("Time: ${event.startTime} - ${event.endTime}"),
-            Text("Location: ${event.location}"),
-            const SizedBox(height: 16),
-            Text(
-              event.isFree 
-                  ? "This is a free event. Would you like to register?"
-                  : "Tickets are available for purchase.",
-              style: const TextStyle(fontWeight: FontWeight.w500),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // Handle booking logic
-              _showSuccessDialog(event);
-            },
-            child: Text(event.isFree ? 'Register' : 'Buy Ticket'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showInterestDialog(EventModel event) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Express Interest'),
-        content: Text('Show your interest in "${event.title}"?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Not Now'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('You\'re interested in ${event.title}'),
-                  backgroundColor: Colors.green,
-                ),
-              );
-            },
-            child: const Text('I\'m Interested'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showSuccessDialog(EventModel event) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          event.isFree 
-              ? 'Successfully registered for ${event.title}!'
-              : 'Redirecting to ticket purchase...',
-        ),
-        backgroundColor: Colors.green,
-        duration: const Duration(seconds: 3),
-      ),
-    );
-  }
-
-  // 🧩 The post-style product card (Instagram-like layout)
-  Widget _buildRegularProductCard(){
-    return Container(
-          margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withOpacity(0.1),
-                blurRadius: 8,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 🏬 Shop Header
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 16,
-                          backgroundColor: Colors.grey[300],
-                          backgroundImage: const NetworkImage(
-                            'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200',
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'product.shopName', // Use product.shopName
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Spacer(),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => FollowingShopsScreen(),
-                          ),
-                        );
-                      }, 
-                      child: Text('Follow', style: TextStyle(fontSize: 12))
-                    ),
-                    Icon(Icons.more_vert, color: Colors.grey[600]),
-                  ],
-                ),
-              ),
-              // 📄 Description
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                child: RichText(
-                  text: TextSpan(
-                    style: const TextStyle(color: Colors.black, fontSize: 13),
-                    children: [
-                      TextSpan(
-                        text: "Name ", // Use product.shopName
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      TextSpan(
-                        text: 'product.description', // Use product.description
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              
-              const SizedBox(height: 6),
-
-              // 🖼️ Product Image
-              AspectRatio(
-                aspectRatio: 1,
-                child: Stack(
-                  children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.grey[200],
-                        image: DecorationImage(
-                          image: NetworkImage('https://picsum.photos/100/100?random=19'), // Use product.imageUrl
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-                    // Positioned(
-                    //   top: 10,
-                    //   left: 10,
-                    //   child: Container(
-                    //     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                    //     decoration: BoxDecoration(
-                    //       color: _getTagColor(product.tag), // Use product.tag
-                    //       borderRadius: BorderRadius.circular(6),
-                    //     ),
-                    //     child: Text(
-                    //       product.tag, // Use product.tag
-                    //       style: const TextStyle(
-                    //         color: Colors.white,
-                    //         fontSize: 10,
-                    //         fontWeight: FontWeight.bold,
-                    //       ),
-                    //     ),
-                    //   ),
-                    // ),
-                    Positioned(
-                      bottom: 10,
-                      left: 10,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: Colors.green.shade300, // Use product.tag
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          'product.price.toStringAsExponential()', // Use product.tag
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // ❤️ 💬 Action buttons
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                child: Row(
-                  // crossAxisAlignment: CrossAxisAlignment.stretch,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    IconButton(
-                      onPressed: () {},
-                      icon: const Icon(Icons.favorite_border),
-                    ),
-                    const Spacer(),
-                    IconButton(
-                      onPressed: () {},
-                      icon: const Icon(Icons.shopping_cart_checkout_outlined),
-                    ),
-                    const Spacer(),
-                    IconButton(
-                      onPressed: () {},
-                      icon: const Icon(Icons.bookmark_border),
-                    ),
-                  ],
-                ),
-              ),
-
-              // ❤️ Likes count
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                child: Text(
-                  "likes", // Use product.likes
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                ),
-              ),
-              const SizedBox(height: 10),
-            ],
-          ),
-        );
-  }
-
-	Color _getTagColor(String tag) {
-    switch (tag.toLowerCase()) {
-      case 'new':
-        return Colors.red;
-      case 'hot':
-        return Colors.orange;
-      case 'trending':
+  Color _getCategoryColor(String category) {
+    switch (category.toLowerCase()) {
+      case 'clubs':
         return Colors.purple;
-      case 'sale':
-        return Colors.green;
-      case 'limited':
-        return Colors.amber;
-      case 'bestseller':
+      case 'academics':
         return Colors.blue;
-      case 'popular':
-        return Colors.pink;
-      case 'eco':
-        return Colors.green;
-      case 'luxury':
-        return Colors.amber;
-      case 'organic':
-        return Colors.lightGreen;
-      case 'modern':
-        return Colors.cyan;
-      case 'essential':
-        return Colors.blueGrey;
-      case 'premium':
-        return Colors.deepPurple;
-      case 'classic':
-        return Colors.brown;
-      case 'home':
-        return Colors.teal;
-      case 'tech':
-        return Colors.indigo;
-      case 'natural':
-        return Colors.lightGreen;
-      case 'summer':
+      case 'sports':
         return Colors.orange;
-      case 'kitchen':
-        return Colors.red;
-      case 'fitness':
-        return Colors.deepOrange;
-      case 'accessory':
-        return Colors.purple;
+      case 'arts':
+        return Colors.green;
+      case 'research':
+        return Colors.indigo;
+      case 'community':
+        return Colors.teal;
       default:
         return Colors.grey;
     }
   }
-}
 
-class ShopStoryItem extends StatelessWidget {
+  String _formatDate(DateTime date) {
+    final difference = DateTime.now().difference(date);
+    if (difference.inDays == 0) return 'Today';
+    if (difference.inDays == 1) return 'Yesterday';
+    if (difference.inDays < 7) return '${difference.inDays}d ago';
+    if (difference.inDays < 30) return '${(difference.inDays / 7).floor()}w ago';
+    return '${date.day}/${date.month}/${date.year}';
+  }
 
-	final String shopName;
-	final bool hasNewContent;
-	const ShopStoryItem({
-		super.key,
-		required this.shopName,
-		required this.hasNewContent,
-	});
-
-	@override
-	Widget build(BuildContext context) {
-		return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const ShowcaseScreen()),
-        );
-      },
-      child: Container(
-			width: 80,
-			margin: const EdgeInsets.symmetric(horizontal: 4.0),
-			child: Column(
-				children: [
-          // Story circle with gradient border
-          Stack(
-            alignment: Alignment.center,
-            children: [
-            // Gradient border for new content
-            if (hasNewContent)
-              Container(
-                width: 68,
-                height: 68,
-                decoration: BoxDecoration(
-                  color:  Color(0xFF833AB4),
-                  shape: BoxShape.circle,
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(2.0),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(2.0),
-                      child: _buildShopAvatar(),
-                    ),
-                  ),
-                ),
-              )
-            else
-              // Simple border for seen content
-              Container(
-                width: 64,
-                height: 64,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                  color: Colors.grey[300]!,
-                  width: 2,
-                  ),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(2.0),
-                  child: _buildShopAvatar(),
-                ),
-              ),
-            ],
-          ),
-          
-          const SizedBox(height: 6),
-          
-          // Shop name
-          SizedBox(
-            width: 70,
-            child: Text(
-              shopName,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: Colors.grey[800],
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-            ),
-          ),
-         
-        ],
-			),
-		),
-    );
-	}
-
-	Widget _buildShopAvatar() {
-		return Container(
-		decoration: BoxDecoration(
-			shape: BoxShape.circle,
-			image: DecorationImage(
-			image: NetworkImage(
-				'https://picsum.photos/100/100?random=${shopName.hashCode}',
-			),
-			fit: BoxFit.cover,
-			),
-		),
-		);
-	}
-}
-
-
-class OffersBanner extends StatelessWidget {
-  const OffersBanner({super.key});
-
-  // Use a getter returning a list of Widgets so instance methods can be called.
-  List<Widget> get banners => [
-        _buildBannerCard(
-          titleLine1: 'New Semester,',
-          titleLine2: 'New Deals!',
-          description: 'Get up to 50% off on study essentials',
-          image: 'https://picsum.photos/200/150?random=10',
-          gradientColors:[ Color(0xFF764BA2),Color(0xFF667EEA),]
-        ),
-        _buildBannerCard(
-          titleLine1: 'Fresh Arrivals,',
-          titleLine2: 'Hot Prices!',
-          description: 'Shop the latest student gear now',
-          image: 'https://picsum.photos/200/150?random=11',
-          gradientColors: [Color(0xFF47F347), Color(0xFF005BEA)],
-        ),
-        _buildBannerCard(
-          titleLine1: 'Limited Time,',
-          titleLine2: 'Exclusive Offers!',
-          description: 'Hurry before stocks run out!',
-          image: 'https://picsum.photos/200/150?random=12',
-          gradientColors: [Color(0xFF764BA2),Color(0xFF72DE0D) ],
-        ),
-      ];
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return CarouselSlider(
-      options: CarouselOptions(
-        height: 180,
-        autoPlay: true,
-        autoPlayInterval: const Duration(seconds: 7),
-        enlargeCenterPage: true,
-        viewportFraction: 0.9,
-        aspectRatio: 16 / 9,
+    final theme = Theme.of(context);
+    final brightness = theme.brightness;
+
+    return Scaffold(
+      backgroundColor: theme.colorScheme.background,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(100),
+        child: SafeArea(
+          bottom: false,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildProfileSection(theme),
+              _buildNotificationIndicator(theme),
+            ],
+          ),
+        ),
       ),
-      // banners is already a list of Widgets
-      items: banners
-          .map(
-            (widget) => ClipRRect(
-              borderRadius: BorderRadius.circular(15),
-              child: widget,
+      body: _loading
+          ? Center(child: CircularProgressIndicator(color: theme.colorScheme.primary))
+          : CustomScrollView(
+              controller: _scrollController,
+              slivers: [
+                SliverToBoxAdapter(child: _buildShowCaseSection(theme, brightness)),
+                SliverToBoxAdapter(child: _buildHighlightsHeader(theme)),
+                if (studentHighlights.isNotEmpty)
+                  SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) => _buildHighlightPost(studentHighlights[index], theme, brightness),
+                      childCount: studentHighlights.length,
+                    ),
+                  )
+                else
+                  SliverToBoxAdapter(child: _buildEmptyHighlights(theme, brightness)),
+              ],
             ),
-          )
-          .toList(),
     );
   }
 
-  Widget _buildBannerCard({
-    required String titleLine1,
-    required String titleLine2,
-    required String description,
-    required String image,
-    List<Color>? gradientColors,
-  }) {
-    return Container(
-      height: 150,
-      width: double.infinity,
-      padding: const EdgeInsets.all(20.0),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: gradientColors ??
-              const [
-                Color(0xFF764BA2),
-                Color(0xFF667EEA),
-              ],
+  Widget _buildProfileSection(ThemeData theme) {
+    final brightness = theme.brightness;
+    final bgGradient = brightness == Brightness.dark
+        ? [const Color(0xFF1E1A33), const Color(0xFF2C254A)]
+        : [Color(0xFFF1EEF6), Color(0xFFE1E6F4)];
+
+    return InkWell(
+      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen())),
+      borderRadius: BorderRadius.circular(12.0),
+      child: Container(
+        width: 180,
+        height: 60,
+        margin: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10),
+        padding: const EdgeInsets.all(8.0),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(colors: bgGradient),
+          borderRadius: BorderRadius.circular(12.0),
         ),
-        borderRadius: BorderRadius.circular(16.0),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 28,
+              backgroundImage: _profileImage != null && _profileImage!.isNotEmpty
+                  ? NetworkImage(_profileImage!)
+                  : null,
+              child: _profileImage == null || _profileImage!.isEmpty
+                  ? Icon(Icons.person, size: 28, color: Colors.grey)
+                  : null,
+            ),
+            const SizedBox(width: 10),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  userName ?? 'User Name',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: theme.colorScheme.onBackground,
+                  ),
+                ),
+                Text(
+                  "Good ${getGreetingTime()}",
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: theme.colorScheme.onBackground.withOpacity(0.7),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNotificationIndicator(ThemeData theme) {
+    final hasUnread = context.watch<NotificationProvider>().hasUnread;
+    final brightness = theme.brightness;
+    final bgGradient = brightness == Brightness.dark
+        ? [const Color(0xFF1E1A33), const Color(0xFF2C254A)]
+        : [Color(0xFFF1EEF6), Color(0xFFE1E6F4)];
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        gradient: LinearGradient(colors: bgGradient),
         boxShadow: [
           BoxShadow(
-            color: Colors.purple.withOpacity(0.3),
+            color: Colors.black.withOpacity(brightness == Brightness.dark ? 0.3 : 0.1),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
+      child: Stack(
         children: [
-          // Text content
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Main title
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      titleLine1,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 15.0,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      titleLine2,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 15.0,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                // Description
-                Text(
-                  description,
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.9),
-                    fontSize: 12.0,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
+          IconButton(
+            icon: Icon(Icons.notifications_outlined, color: theme.colorScheme.onBackground),
+            onPressed: () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationScreen()));
+            },
           ),
-          const SizedBox(width: 20),
-          // Banner image
-          Container(
-            width: 120,
-            height: 120,
-            decoration: BoxDecoration(
-              image: DecorationImage(
-                image: NetworkImage(image),
-                fit: BoxFit.cover,
+          if (hasUnread)
+            Positioned(
+              right: 10,
+              top: 10,
+              child: Container(
+                width: 10,
+                height: 10,
+                decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
               ),
-              borderRadius: BorderRadius.circular(12.0),
             ),
-          ),
         ],
       ),
     );
   }
 
+  // The other widgets (_buildShowCaseSection, _buildHighlightsHeader, _buildHighlightPost, _buildEmptyHighlights) should be updated similarly to use theme colors and brightness for cards, text, backgrounds, and gradients.
+  // For brevity, they can follow the pattern above: replace hardcoded colors with theme.colorScheme or conditional colors based on brightness.
+  // Show Case Section
+Widget _buildShowCaseSection(ThemeData theme, Brightness brightness) {
+  return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 5),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Show Case',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.onBackground,
+              ),
+            ),
+            Container(
+              decoration: BoxDecoration(
+                color: brightness == Brightness.dark
+                    ? Colors.blueGrey.shade700
+                    : Colors.lightBlue.shade50,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: TextButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const FollowingShopsScreen()),
+                  );
+                },
+                child: Text(
+                  'Following',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 110,
+          child: FutureBuilder<List<Map<String, dynamic>>>(
+            future: _showcaseFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return Center(
+                  child: CircularProgressIndicator(color: theme.colorScheme.primary),
+                );
+              }
+
+              if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                return Center(
+                  child: Text(
+                    'No showcases available.',
+                    style: TextStyle(color: theme.colorScheme.onBackground.withOpacity(0.6)),
+                  ),
+                );
+              }
+
+              final showcases = snapshot.data!;
+              final Map<String, List<Map<String, dynamic>>> groupedShowcases = {};
+
+              for (final show in showcases) {
+                final shop = show['shops'];
+                final shopId = shop?['id'] ?? show['shop_id'];
+                if (shopId == null) continue;
+                groupedShowcases.putIfAbsent(shopId, () => []).add(show);
+              }
+
+              final groupedEntries = groupedShowcases.entries.toList();
+
+              return ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: groupedEntries.length,
+                itemBuilder: (context, index) {
+                  final entry = groupedEntries[index];
+                  final shopShowcases = entry.value;
+                  final shop = shopShowcases.first['shops'];
+                  final shopName = shop?['name'] ?? 'Unnamed';
+                  final shopImage = shop?['image_url'];
+
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ShowcaseViewerScreen(
+                            showcases: shopShowcases,
+                            initialIndex: 0,
+                          ),
+                        ),
+                      );
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                      child: Column(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(2.5),
+                            decoration: const BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  Color(0xFF4CAF50),
+                                  Color(0xFF2196F3),
+                                  Color(0xFF9C27B0),
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              shape: BoxShape.circle,
+                            ),
+                            child: CircleAvatar(
+                              radius: 30,
+                              backgroundColor: brightness == Brightness.dark
+                                  ? Colors.grey[800]
+                                  : Colors.white,
+                              backgroundImage: shopImage != null ? NetworkImage(shopImage) : null,
+                              child: shopImage == null
+                                  ? Icon(Icons.store, size: 30, color: theme.colorScheme.onBackground)
+                                  : null,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          SizedBox(
+                            width: 70,
+                            child: Text(
+                              shopName,
+                              textAlign: TextAlign.center,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: theme.colorScheme.onBackground,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
+// Highlights Header
+Widget _buildHighlightsHeader(ThemeData theme) {
+  return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10),
+    child: Text(
+      'Student Highlights',
+      style: TextStyle(
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+        color: theme.colorScheme.onBackground,
+      ),
+    ),
+  );
+}
+
+// Highlight Post
+Widget _buildHighlightPost(Map<String, dynamic> highlight, ThemeData theme, Brightness brightness) {
+  final isDark = brightness == Brightness.dark;
+
+  return Container(
+    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        colors: isDark
+            ? const [Color(0xFF1E1A33), Color(0xFF2C254A)] // dark mode gradient
+            : const [Color.fromARGB(255, 241, 238, 246), Color.fromARGB(255, 225, 230, 244)], // light mode gradient
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+      borderRadius: BorderRadius.circular(12),
+    ),
+    // shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    child: InkWell(
+      onTap: () => _navigateToHighlightDetail(highlight),
+      borderRadius: BorderRadius.circular(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Image
+          ClipRRect(
+            borderRadius: const BorderRadius.only(topLeft: Radius.circular(12), topRight: Radius.circular(12)),
+            child: Image.network(
+              highlight['image_url'],
+              height: 250,
+              width: double.infinity,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(
+                height: 250,
+                color: Colors.grey[300],
+                child: Icon(Icons.broken_image, size: 50, color: Colors.grey[600]),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Category Chip
+                if (highlight['category'] != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: _getCategoryColor(highlight['category']).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        color: _getCategoryColor(highlight['category']).withOpacity(0.3),
+                      ),
+                    ),
+                    child: Text(
+                      highlight['category'].toString().toUpperCase(),
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: _getCategoryColor(highlight['category']),
+                      ),
+                    ),
+                  ),
+                const SizedBox(height: 8),
+                // Title
+                Text(
+                  highlight['title'] ?? 'Untitled Highlight',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onBackground,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 8),
+                // Description
+                Text(
+                  highlight['description'] ?? '',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: theme.colorScheme.onBackground.withOpacity(0.7),
+                    height: 1.4,
+                  ),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 12),
+                // Engagement Stats
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.favorite_border, size: 16, color: Colors.grey[500]),
+                        const SizedBox(width: 4),
+                        Text('${highlight['likes'] ?? 0}', style: TextStyle(fontSize: 12, color: Colors.grey[500])),
+                        const SizedBox(width: 16),
+                        Icon(Icons.chat_bubble_outline, size: 16, color: Colors.grey[500]),
+                        const SizedBox(width: 4),
+                        Text('${highlight['comment_count'] ?? 0}', style: TextStyle(fontSize: 12, color: Colors.grey[500])),
+                      ],
+                    ),
+                    Text(_formatDate(highlight['created_at']), style: TextStyle(fontSize: 12, color: Colors.grey[500])),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+// Empty Highlights
+Widget _buildEmptyHighlights(ThemeData theme, Brightness brightness) {
+  final isDark = brightness == Brightness.dark;
+
+  return Container(
+    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+    padding: const EdgeInsets.all(40),
+    decoration: BoxDecoration(
+      color: isDark ? Colors.grey[900] : Colors.grey[50],
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: isDark ? Colors.grey[700]! : Colors.grey[300]!),
+    ),
+    child: Column(
+      children: [
+        Icon(Icons.highlight_off, size: 50, color: isDark ? Colors.grey[600] : Colors.grey[400]),
+        const SizedBox(height: 16),
+        Text(
+          'No highlights yet',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: theme.colorScheme.onBackground.withOpacity(0.7),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Check back later for student highlights',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: theme.colorScheme.onBackground.withOpacity(0.6)),
+        ),
+      ],
+    ),
+  );
+}
+}
+
+// Highlight Detail Screen (unchanged, optional: apply theme for background/text)
+class HighlightDetailScreen extends StatelessWidget {
+  final Map<String, dynamic> highlight;
+
+  const HighlightDetailScreen({super.key, required this.highlight});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Scaffold(
+      backgroundColor: theme.colorScheme.background,
+      appBar: AppBar(
+        title: const Text('Highlight'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        foregroundColor: theme.colorScheme.onBackground,
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            Image.network(
+              highlight['image_url'],
+              width: double.infinity,
+              height: 300,
+              fit: BoxFit.cover,
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    highlight['title'] ?? 'Untitled Highlight',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onBackground,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    highlight['description'] ?? '',
+                    style: TextStyle(fontSize: 16, height: 1.5, color: theme.colorScheme.onBackground.withOpacity(0.8)),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

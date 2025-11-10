@@ -1,374 +1,24 @@
 import 'package:flutter/material.dart';
-import '../home/home_screen.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:versity_soko/services/events_registeries_services.dart';
 
 class MessageScreen extends StatefulWidget {
   const MessageScreen({super.key});
 
   @override
-  State<MessageScreen> createState() => _ActivityHubScreenState();
+  State<MessageScreen> createState() => _MessageScreenState();
 }
 
-class _MessageScreenState extends State<MessageScreen> {
-  final TextEditingController _messageController = TextEditingController();
-  final List<Message> _messages = [
-    Message(
-      text: 'Hello! I\'m interested in the Nike Air shoes. Are they still available?',
-      isMe: false,
-      time: '10:30 AM',
-      senderName: 'Sarah T.',
-    ),
-    Message(
-      text: 'Yes, they are available! They\'re in great condition and barely worn.',
-      isMe: true,
-      time: '10:32 AM',
-    ),
-    Message(
-      text: 'That\'s great! What size are they and could you send more photos?',
-      isMe: false,
-      time: '10:33 AM',
-      senderName: 'Sarah T.',
-    ),
-    Message(
-      text: 'They\'re size 42. Here are some more photos:',
-      isMe: true,
-      time: '10:35 AM',
-    ),
-    Message(
-      text: 'Perfect! Could we meet on campus tomorrow?',
-      isMe: false,
-      time: '10:36 AM',
-      senderName: 'Sarah T.',
-    ),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: _buildAppBar(),
-      body: Column(
-        children: [
-          Expanded(
-            child: _buildMessageList(),
-          ),
-          _buildMessageInput(),
-        ],
-      ),
-    );
-  }
-
-  AppBar _buildAppBar() {
-    return AppBar(
-      backgroundColor: Colors.white,
-      elevation: 1,
-      leading: IconButton(
-        icon: Icon(
-          Icons.arrow_back_ios,
-          color: Colors.grey[700],
-          size: 20,
-        ),
-        onPressed: () {
-          Navigator.pop(context);
-        },
-      ),
-      title: Row(
-        children: [
-          // Profile Avatar
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              image: DecorationImage(
-                image: NetworkImage('https://picsum.photos/100/100?random=1'),
-                fit: BoxFit.cover,
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Sarah T.',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87,
-                ),
-              ),
-              Text(
-                'Online',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.green[600],
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-      actions: [
-        IconButton(
-          icon: Icon(
-            Icons.phone,
-            color: Colors.grey[700],
-            size: 20,
-          ),
-          onPressed: () {
-            // Handle call
-          },
-        ),
-        IconButton(
-          icon: Icon(
-            Icons.videocam,
-            color: Colors.grey[700],
-            size: 20,
-          ),
-          onPressed: () {
-            // Handle video call
-          },
-        ),
-        IconButton(
-          icon: Icon(
-            Icons.more_vert,
-            color: Colors.grey[700],
-            size: 20,
-          ),
-          onPressed: () {
-            // Handle more options
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMessageList() {
-    return ListView.builder(
-      padding: const EdgeInsets.all(16.0),
-      reverse: false,
-      itemCount: _messages.length,
-      itemBuilder: (context, index) {
-        final message = _messages[index];
-        return _buildMessageBubble(message);
-      },
-    );
-  }
-
-  Widget _buildMessageBubble(Message message) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: message.isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
-        children: [
-          if (!message.isMe) ...[
-            // Sender Avatar
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                image: DecorationImage(
-                  image: NetworkImage('https://picsum.photos/100/100?random=2'),
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-          ],
-          Expanded(
-            child: Column(
-              crossAxisAlignment: message.isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-              children: [
-                if (!message.isMe)
-                  Text(
-                    message.senderName!,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey[700],
-                    ),
-                  ),
-                const SizedBox(height: 2),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: message.isMe ? Colors.blue : Colors.grey[100],
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  child: Text(
-                    message.text,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: message.isMe ? Colors.white : Colors.black87,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  message.time,
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: Colors.grey[500],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (message.isMe) ...[
-            const SizedBox(width: 8),
-            // My Avatar
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                image: DecorationImage(
-                  image: NetworkImage('https://picsum.photos/100/100?random=3'),
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMessageInput() {
-    return Container(
-      padding: const EdgeInsets.all(16.0),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          top: BorderSide(
-            color: Colors.grey[300]!,
-            width: 1,
-          ),
-        ),
-      ),
-      child: Row(
-        children: [
-          // Attachment Button
-          IconButton(
-            icon: Icon(
-              Icons.attach_file,
-              color: Colors.grey[600],
-              size: 20,
-            ),
-            onPressed: () {
-              // Handle attachment
-            },
-          ),
-          // Emoji Button
-          IconButton(
-            icon: Icon(
-              Icons.emoji_emotions_outlined,
-              color: Colors.grey[600],
-              size: 20,
-            ),
-            onPressed: () {
-              // Handle emoji
-            },
-          ),
-          // Message Input
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: Colors.grey[50],
-                borderRadius: BorderRadius.circular(25),
-                border: Border.all(
-                  color: Colors.grey[300]!,
-                ),
-              ),
-              child: TextField(
-                controller: _messageController,
-                decoration: InputDecoration(
-                  hintText: 'Type a message...',
-                  hintStyle: TextStyle(
-                    color: Colors.grey[500],
-                  ),
-                  border: InputBorder.none,
-                ),
-                maxLines: null,
-              ),
-            ),
-          ),
-          // Send Button
-          IconButton(
-            icon: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.blue,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.send,
-                color: Colors.white,
-                size: 18,
-              ),
-            ),
-            onPressed: () {
-              _sendMessage();
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _sendMessage() {
-    final text = _messageController.text.trim();
-    if (text.isNotEmpty) {
-      setState(() {
-        _messages.add(Message(
-          text: text,
-          isMe: true,
-          time: 'Now',
-        ));
-        _messageController.clear();
-      });
-    }
-  }
-
-  @override
-  void dispose() {
-    _messageController.dispose();
-    super.dispose();
-  }
-}
-
-class Message {
-  final String text;
-  final bool isMe;
-  final String time;
-  final String? senderName;
-
-  Message({
-    required this.text,
-    required this.isMe,
-    required this.time,
-    this.senderName,
-  });
-}
-
-// class ActivityHubScreen extends StatefulWidget {
-//   const ActivityHubScreen({super.key});
-
-//   @override
-//   State<ActivityHubScreen> createState() => _ActivityHubScreenState();
-// }
-
-class _ActivityHubScreenState extends State<MessageScreen>
+class _MessageScreenState extends State<MessageScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  final SupabaseClient _supabase = Supabase.instance.client;
+  bool get isDark => Theme.of(context).brightness == Brightness.dark;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 2, vsync: this);
   }
 
   @override
@@ -379,210 +29,219 @@ class _ActivityHubScreenState extends State<MessageScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey[50],
-      appBar: AppBar(
-        title: const Text('Activity Hub'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
-        automaticallyImplyLeading: false, // 🔥 Hides the default back button
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: Theme.of(context).colorScheme.primary,
-          unselectedLabelColor: Colors.grey[600],
-          indicatorColor: Theme.of(context).colorScheme.primary,
-          indicatorWeight: 3,
-          labelStyle: const TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 14,
+  return Scaffold(
+    backgroundColor: isDark ? Colors.black : Colors.grey[50],
+    appBar: AppBar(
+      backgroundColor: isDark ? Colors.black : Colors.grey[50],
+      foregroundColor: Colors.black87,
+      automaticallyImplyLeading: false,
+      elevation: 0,
+      surfaceTintColor: Colors.transparent,
+      title: ShaderMask(
+        shaderCallback: (bounds) {
+          return LinearGradient(
+            colors: isDark ? [Color.fromARGB(255, 169, 123, 215), Color.fromARGB(255, 126, 146, 237)] : [Colors.blue[700]!, Colors.purple[600]!] ,
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+          ).createShader(bounds);
+        },
+        child: const Text(
+          'Activity Hub',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: Colors.white, // this will be masked by the gradient
           ),
-          tabs: const [
-            Tab(text: 'Orders'),
-            Tab(text: 'Payments'),
-            Tab(text: 'Messages'),
-            Tab(text: 'Utilities'),
-          ],
         ),
       ),
-      body: TabBarView(
+      bottom: TabBar(
         controller: _tabController,
-        children: const [
-          OrdersTab(),
-          PaymentsTab(),
-          MessagesTab(),
-          UtilitiesTab(),
+        labelColor: Theme.of(context).colorScheme.primary,
+        unselectedLabelColor: Colors.grey[600],
+        indicatorColor: Theme.of(context).colorScheme.primary,
+        indicatorWeight: 3,
+        labelStyle: const TextStyle(
+          fontWeight: FontWeight.w600,
+          fontSize: 14,
+        ),
+        tabs: const [
+          Tab(text: 'Orders'),
+          Tab(text: 'Events'),
         ],
-
       ),
-      // bottomNavigationBar: CustomBottomNavBar(
-			// 	currentIndex: 0,
-			// 	onTap: (index) {
-			// 	switch (index) {
-			// 		case 0:
-			// 		Navigator.pushNamed(context, '/home');
-			// 		case 1:
-			// 		Navigator.pushNamed(context, '/shops');
-			// 		break;
-			// 		case 2:
-			// 		Navigator.pushNamed(context, '/create');
-			// 		break;
-			// 		case 3:
-			// 		Navigator.pushNamed(context, '/community');
-			// 		break;
-			// 		case 4:
-			// 		Navigator.pushNamed(context, '/message');
-			// 	}
-			// 	},
-			// ),
-    );
-  }
+    ),
+    body: TabBarView(
+      controller: _tabController,
+      children: const [
+        OrdersTab(),
+        EventsTab(),
+      ],
+    ),
+  );
+}
 }
 
-// ORDERS TAB
-class OrdersTab extends StatelessWidget {
+// ORDERS TAB - Integrated with Supabase
+class OrdersTab extends StatefulWidget {
   const OrdersTab({super.key});
-  
+
+  @override
+  State<OrdersTab> createState() => _OrdersTabState();
+}
+
+class _OrdersTabState extends State<OrdersTab> {
+  final SupabaseClient _supabase = Supabase.instance.client;
+  List<Map<String, dynamic>> _orders = [];
+  bool _isLoading = true;
+  bool get isDark => Theme.of(context).brightness == Brightness.dark;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchOrders();
+  }
+
+  Future<void> _fetchOrders() async {
+    try {
+      final user = _supabase.auth.currentUser;
+      if (user == null) return;
+
+      final response = await _supabase
+          .from('user_orders')
+          .select('*, shop_orders(status, total_price, product_id, quantity)')
+          .eq('user_id', user.id)
+          .order('created_at', ascending: false);
+
+      setState(() {
+        _orders = List<Map<String, dynamic>>.from(response);
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      print('Error fetching orders: $e');
+    }
+  }
+
+  Color _getStatusColorFromShopOrder(Map<String, dynamic> order) {
+    // Get the shop_orders list
+    final shopOrders = order['shop_orders'] as List<dynamic>?;
+
+    // If there are no shop orders, return grey
+    if (shopOrders == null || shopOrders.isEmpty) return Colors.grey;
+
+    // Assuming you want the status of the first shop order
+    final status = (shopOrders[0] as Map<String, dynamic>)['status'] as String?;
+
+    switch (status?.toLowerCase()) {
+      case 'confirmed':
+        return Colors.green;
+      case 'cancelled':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  String _formatDate(String dateString) {
+    try {
+      final date = DateTime.parse(dateString);
+      final now = DateTime.now();
+      final difference = now.difference(date);
+
+      if (difference.inDays == 0) {
+        return 'Today, ${_formatTime(date)}';
+      } else if (difference.inDays == 1) {
+        return 'Yesterday, ${_formatTime(date)}';
+      } else {
+        return '${date.day}/${date.month}/${date.year}';
+      }
+    } catch (e) {
+      return dateString;
+    }
+  }
+
+  String _formatTime(DateTime date) {
+    return '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+  }
 
   @override
   Widget build(BuildContext context) {
-    return CustomScrollView(
-      slivers: [
-        SliverPadding(
-          padding: const EdgeInsets.all(16),
-          sliver: SliverToBoxAdapter(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Current Orders Section
-                _buildSectionHeader(
-                  title: 'Current Orders',
-                  icon: Icons.pending_actions,
-                ),
-                const SizedBox(height: 12),
-                _buildOrderCard(
-                  orderId: '#ORD-7842',
-                  status: 'In Transit',
-                  items: '3 items',
-                  date: 'Today, 10:30 AM',
-                  amount: '\$124.99',
-                  statusColor: Colors.orange,
-                  showTracking: true,
-                ),
-                const SizedBox(height: 12),
-                _buildOrderCard(
-                  orderId: '#ORD-7839',
-                  status: 'Processing',
-                  items: '1 item',
-                  date: 'Yesterday, 3:45 PM',
-                  amount: '\$49.99',
-                  statusColor: Colors.blue,
-                  showTracking: false,
-                ),
-              ],
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
+
+    if (_orders.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.shopping_bag_outlined,
+              size: 64,
+              color: Colors.grey[400],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No orders yet',
+              style: TextStyle(
+                fontSize: 18,
+                color: Colors.grey[600],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Your orders will appear here',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[500],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _fetchOrders,
+      child: CustomScrollView(
+        slivers: [
+          SliverPadding(
+            padding: const EdgeInsets.all(16),
+            sliver: SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, index) {
+                  final order = _orders[index];
+                  return _buildOrderCard(order);
+                },
+                childCount: _orders.length,
+              ),
             ),
           ),
-        ),
-        
-        // Order History Section
-        SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          sliver: SliverToBoxAdapter(
-            child: _buildSectionHeader(
-              title: 'Order History',
-              icon: Icons.history,
-            ),
-          ),
-        ),
-        
-        SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          sliver: SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                final orders = [
-                  {
-                    'id': '#ORD-7831',
-                    'status': 'Delivered',
-                    'items': '2 items',
-                    'date': 'Oct 12, 2024',
-                    'amount': '\$89.99',
-                    'statusColor': Colors.green,
-                  },
-                  {
-                    'id': '#ORD-7825',
-                    'status': 'Delivered',
-                    'items': '1 item',
-                    'date': 'Oct 8, 2024',
-                    'amount': '\$34.99',
-                    'statusColor': Colors.green,
-                  },
-                  {
-                    'id': '#ORD-7818',
-                    'status': 'Cancelled',
-                    'items': '4 items',
-                    'date': 'Oct 3, 2024',
-                    'amount': '\$156.50',
-                    'statusColor': Colors.red,
-                  },
-                ];
-                
-                if (index >= orders.length) return null;
-                final order = orders[index];
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: _buildCompactOrderCard(
-                    orderId: order['id']='MJW-2121',
-                    status: order['status']='Delivered',
-                    items: order['items']='2 items',
-                    date: order['date']='Oct 12, 2024',
-                    amount: order['amount']='KES 2100.25',
-                    statusColor: order['statusColor'] as Color,
-                  ),
-                );
-              },
-            ),
-          ),
-        ),
-        
-        const SliverToBoxAdapter(
-          child: SizedBox(height: 20),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
-  Widget _buildSectionHeader({required String title, required IconData icon}) {
-    return Row(
-      children: [
-        Icon(icon, size: 20, color: Colors.grey[700]),
-        const SizedBox(width: 8),
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: Colors.black87,
-          ),
-        ),
-      ],
-    );
-  }
+  Widget _buildOrderCard(Map<String, dynamic> order) {
+    final status = order['status']?.toString() ?? 'Pending';
+    final statusColor = _getStatusColorFromShopOrder(order);
+    final totalAmount = order['total_amount'] ?? 0.0;
+    final orderId = order['id']?.toString() ?? '';
+    final createdAt = order['created_at']?.toString() ?? '';
+    final itemsCount = order['items_count'] ?? 0;
 
-  Widget _buildOrderCard({
-    required String orderId,
-    required String status,
-    required String items,
-    required String date,
-    required String amount,
-    required Color statusColor,
-    required bool showTracking,
-  }) {
     return Container(
+      margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        gradient: LinearGradient(
+          colors: isDark ? [const Color(0xFF1E1A33), const Color(0xFF2C254A)]
+        : [Color(0xFFF1EEF6), Color(0xFFE1E6F4)],
+        ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -599,7 +258,7 @@ class OrdersTab extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                orderId,
+                'Order #${orderId.substring(0, 8)}',
                 style: const TextStyle(
                   fontWeight: FontWeight.w600,
                   fontSize: 16,
@@ -612,7 +271,7 @@ class OrdersTab extends StatelessWidget {
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  status,
+                  status.toUpperCase(),
                   style: TextStyle(
                     color: statusColor,
                     fontSize: 12,
@@ -624,7 +283,7 @@ class OrdersTab extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            items,
+            '$itemsCount item${itemsCount != 1 ? 's' : ''}',
             style: TextStyle(
               color: Colors.grey[600],
               fontSize: 14,
@@ -632,7 +291,7 @@ class OrdersTab extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            date,
+            _formatDate(createdAt),
             style: TextStyle(
               color: Colors.grey[500],
               fontSize: 12,
@@ -643,20 +302,20 @@ class OrdersTab extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                amount,
+                'KES ${totalAmount.toStringAsFixed(2)}',
                 style: const TextStyle(
                   fontWeight: FontWeight.w600,
                   fontSize: 16,
                   color: Colors.green,
                 ),
               ),
-              if (showTracking)
+              if (status.toLowerCase() == 'shipped' || status.toLowerCase() == 'in transit')
                 ElevatedButton(
                   onPressed: () {
                     // Track order action
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
+                    backgroundColor: Theme.of(context).colorScheme.primary,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
@@ -671,781 +330,366 @@ class OrdersTab extends StatelessWidget {
       ),
     );
   }
-
-  Widget _buildCompactOrderCard({
-    required String orderId,
-    required String status,
-    required String items,
-    required String date,
-    required String amount,
-    required Color statusColor,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[200]!),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 4,
-            height: 40,
-            decoration: BoxDecoration(
-              color: statusColor,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  orderId,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                  ),
-                ),
-                Text(
-                  '$items • $date',
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                amount,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
-                  color: Colors.green,
-                ),
-              ),
-              Text(
-                status,
-                style: TextStyle(
-                  color: statusColor,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
 }
 
-// PAYMENTS TAB
-class PaymentsTab extends StatelessWidget {
-  const PaymentsTab({super.key});
+// EVENTS TAB - Integrated with Supabase
+class EventsTab extends StatefulWidget {
+  const EventsTab({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return CustomScrollView(
-      slivers: [
-        SliverPadding(
-          padding: const EdgeInsets.all(16),
-          sliver: SliverToBoxAdapter(
-            child: Column(
-              children: [
-                // Payment Methods
-                _buildPaymentMethodsSection(),
-                const SizedBox(height: 24),
-                
-                // Recent Transactions
-                _buildTransactionsSection(),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
+  State<EventsTab> createState() => _EventsTabState();
+}
+
+class _EventsTabState extends State<EventsTab> {
+  // final SupabaseClient _supabase = Supabase.instance.client;
+  List<Map<String, dynamic>> _events = [];
+  // bool _isLoading = true;
+  final _eventService = EventRegistriesService();
+  final userId = Supabase.instance.client.auth.currentUser!.id;
+  List<Map<String, dynamic>> _upcomingEvents = [];
+  List<Map<String, dynamic>> _pastEvents = [];
+  bool _loading = false;
+  bool get isDark => Theme.of(context).brightness == Brightness.dark;
+
+  @override
+  @override
+  void initState() {
+    super.initState();
+    _loadUserEvents();
+  }
+  Future<void> _loadUserEvents() async {
+    setState(() => _loading = true);
+
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    if (userId == null) {
+      setState(() => _loading = false);
+      return;
+    }
+
+    final result = await _eventService.getUserEventHistory(userId);
+
+    setState(() {
+      _upcomingEvents = result['upcoming'] ?? [];
+      _pastEvents = result['past'] ?? [];
+      // Combine both for fallback use (optional)
+      _events = [..._upcomingEvents, ..._pastEvents];
+      _loading = false;
+    });
   }
 
-  Widget _buildPaymentMethodsSection() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+
+  String _formatEventDate(String dateString) {
+    try {
+      final date = DateTime.parse(dateString);
+      return '${date.day}/${date.month}/${date.year}';
+    } catch (e) {
+      return dateString;
+    }
+  }
+
+  String _formatEventTime(String dateString) {
+    try {
+      final date = DateTime.parse(dateString);
+      return '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+    } catch (e) {
+      return '';
+    }
+  }
+
+  Color _getEventColor(String category) {
+    switch (category.toLowerCase()) {
+      case 'workshop':
+        return Colors.orange;
+      case 'seminar':
+        return Colors.blue;
+      case 'conference':
+        return Colors.purple;
+      case 'social':
+        return Colors.green;
+      default:
+        return Theme.of(context).colorScheme.primary;
+    }
+  }
+
+  @override
+Widget build(BuildContext context) {
+  if (_loading) {
+    return const Center(child: CircularProgressIndicator());
+  }
+
+  if (_upcomingEvents.isEmpty && _pastEvents.isEmpty) {
+    return Center(
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Row(
-            children: [
-              Icon(Icons.credit_card, size: 20, color: Colors.blue),
-              SizedBox(width: 8),
-              Text(
-                'Payment Methods',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
+          Icon(Icons.event_outlined, size: 64, color: Colors.grey[400]),
           const SizedBox(height: 16),
-          
-          // Saved Cards
-          _buildPaymentMethodItem(
-            icon: Icons.credit_card,
-            title: 'Visa ending in 4242',
-            subtitle: 'Expires 12/25',
-            isDefault: true,
-          ),
-          const SizedBox(height: 12),
-          _buildPaymentMethodItem(
-            icon: Icons.credit_card,
-            title: 'Mastercard ending in 8888',
-            subtitle: 'Expires 08/26',
-            isDefault: false,
-          ),
-          const SizedBox(height: 16),
-          
-          // Add New Method Button
-          OutlinedButton.icon(
-            onPressed: () {
-              // Add payment method
-            },
-            icon: const Icon(Icons.add, size: 18),
-            label: const Text('Add Payment Method'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.blue,
-              side: const BorderSide(color: Colors.blue),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-          ),
+          Text('No events scheduled',
+              style: TextStyle(fontSize: 18, color: Colors.grey[600])),
+          const SizedBox(height: 8),
+          Text('Check back later for upcoming events',
+              style: TextStyle(fontSize: 14, color: Colors.grey[500])),
         ],
       ),
     );
   }
 
-  Widget _buildPaymentMethodItem({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required bool isDefault,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: isDefault ? Colors.blue : Colors.transparent,
-          width: 1.5,
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: Colors.grey[600], size: 20),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (isDefault)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.blue.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(4),
-              ),
+  return RefreshIndicator(
+    onRefresh: _loadUserEvents,
+    child: CustomScrollView(
+      slivers: [
+        // Upcoming Events Section
+        if (_upcomingEvents.isNotEmpty)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
               child: Text(
-                'Default',
-                style: TextStyle(
-                  color: Colors.blue,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                ),
+                'Upcoming Events',
+                style: Theme.of(context)
+                    .textTheme
+                    .titleMedium
+                    ?.copyWith(fontWeight: FontWeight.bold),
               ),
             ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTransactionsSection() {
-    final transactions = [
-      {
-        'title': 'Order #ORD-7842',
-        'date': 'Today, 10:30 AM',
-        'amount': '-\$124.99',
-        'type': 'debit',
-        'icon': Icons.shopping_bag,
-      },
-      {
-        'title': 'Refund #REF-4521',
-        'date': 'Oct 15, 2024',
-        'amount': '+\$49.99',
-        'type': 'credit',
-        'icon': Icons.assignment_return,
-      },
-      {
-        'title': 'Order #ORD-7831',
-        'date': 'Oct 12, 2024',
-        'amount': '-\$89.99',
-        'type': 'debit',
-        'icon': Icons.shopping_bag,
-      },
-      {
-        'title': 'Wallet Top-up',
-        'date': 'Oct 10, 2024',
-        'amount': '+\$100.00',
-        'type': 'credit',
-        'icon': Icons.account_balance_wallet,
-      },
-    ];
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Row(
-            children: [
-              Icon(Icons.receipt_long, size: 20, color: Colors.green),
-              SizedBox(width: 8),
-              Text(
-                'Recent Transactions',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
+        if (_upcomingEvents.isNotEmpty)
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            sliver: SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, index) {
+                  final event = _upcomingEvents[index];
+                  return _buildEventCard(event);
+                },
+                childCount: _upcomingEvents.length,
               ),
-            ],
+            ),
           ),
-          const SizedBox(height: 16),
-          
-          ...transactions.map((transaction) => Column(
-            children: [
-              _buildTransactionItem(
-                icon: transaction['icon'] as IconData,
-                title: transaction['title'] as String,
-                date: transaction['date'] as String,
-                amount: transaction['amount'] as String,
-                isCredit: transaction['type'] == 'credit',
-              ),
-              if (transaction != transactions.last)
-                const SizedBox(height: 12),
-            ],
-          )),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildTransactionItem({
-    required IconData icon,
-    required String title,
-    required String date,
-    required String amount,
-    required bool isCredit,
-  }) {
-    return Row(
-      children: [
-        Container(
-          width: 40,
-          height: 40,
+        // Past Events Section
+        if (_pastEvents.isNotEmpty)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+              child: Text(
+                'Past Events',
+                style: Theme.of(context)
+                    .textTheme
+                    .titleMedium
+                    ?.copyWith(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+        if (_pastEvents.isNotEmpty)
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            sliver: SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, index) {
+                  final event = _pastEvents[index];
+                  return _buildEventCard(event);
+                },
+                childCount: _pastEvents.length,
+              ),
+            ),
+          ),
+      ],
+    ),
+  );
+}
+
+Widget _buildEventCard(Map<String, dynamic> event) {
+  final title = event['title']?.toString() ?? 'Untitled Event';
+  final description = event['description']?.toString() ?? '';
+  final eventDate = event['schedule_day']?.toString() ?? '';
+  final eventStartTime = event['start_time']?.toString() ?? '';
+  final eventEndTime = event['end_time']?.toString() ?? '';
+  final location = event['location']?.toString() ?? '';
+  final category = event['category']?.toString() ?? 'General';
+  final eventColor = _getEventColor(category);
+  final String imageUrl = event['image_url']?.toString() ?? '';
+
+  return FutureBuilder<bool>(
+    future: _checkIfRegistered(event['id']),
+    builder: (context, snapshot) {
+      final isRegistered = snapshot.data ?? false;
+
+      if (snapshot.connectionState == ConnectionState.waiting) {
+        // Small loader only for the registration button
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: isCredit ? Colors.green.withOpacity(0.1) : Colors.blue.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
           ),
-          child: Icon(
-            icon,
-            color: isCredit ? Colors.green : Colors.blue,
-            size: 20,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              Text(
-                date,
-                style: TextStyle(
-                  color: Colors.grey[600],
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ),
-        ),
-        Text(
-          amount,
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            color: isCredit ? Colors.green : Colors.red,
-          ),
-        ),
-      ],
-    );
-  }
-}
+          child: const Center(child: CircularProgressIndicator()),
+        );
+      }
 
-// MESSAGES TAB
-class MessagesTab extends StatelessWidget {
-  const MessagesTab({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomScrollView(
-      slivers: [
-        SliverPadding(
-          padding: const EdgeInsets.all(16),
-          sliver: SliverToBoxAdapter(
-            child: Column(
-              children: [
-                // Unread Messages
-                _buildMessageCard(
-                  name: 'Tech Store Support',
-                  message: 'Your order #ORD-7842 has been shipped! Tracking number: TRK784215',
-                  time: '10:45 AM',
-                  unread: true,
-                  isSupport: true,
-                ),
-                const SizedBox(height: 12),
-                
-                _buildMessageCard(
-                  name: 'Sarah Johnson',
-                  message: 'Thanks for your purchase! Let me know if you have any questions about the product.',
-                  time: 'Yesterday',
-                  unread: true,
-                  isSupport: false,
-                ),
-              ],
-            ),
+      return Container(
+        margin: const EdgeInsets.only(bottom: 20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: isDark ? [const Color(0xFF1E1A33), const Color(0xFF2C254A)]
+        : [Color(0xFFF1EEF6), Color(0xFFE1E6F4)],
           ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
-        
-        // Recent Conversations
-        SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          sliver: SliverToBoxAdapter(
-            child: _buildSectionHeader(
-              title: 'Recent Conversations',
-              icon: Icons.chat_bubble_outline,
-            ),
-          ),
-        ),
-        
-        SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          sliver: SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                final conversations = [
-                  {
-                    'name': 'Design Studio',
-                    'message': 'We received your custom design request',
-                    'time': 'Oct 15',
-                    'unread': false,
-                  },
-                  {
-                    'name': 'Mike\'s Electronics',
-                    'message': 'Your warranty has been registered',
-                    'time': 'Oct 14',
-                    'unread': false,
-                  },
-                  {
-                    'name': 'Book Store',
-                    'message': 'Your pre-order is ready for pickup',
-                    'time': 'Oct 12',
-                    'unread': false,
-                  },
-                ];
-                
-                if (index >= conversations.length) return null;
-                final conv = conversations[index];
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: _buildMessageCard(
-                    name: conv['name'] as String,
-                    message: conv['message'] as String,
-                    time: conv['time'] as String,
-                    unread: conv['unread'] as bool,
-                    isSupport: false,
-                  ),
-                );
-              },
-            ),
-          ),
-        ),
-        
-        const SliverToBoxAdapter(
-          child: SizedBox(height: 20),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSectionHeader({required String title, required IconData icon}) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        children: [
-          Icon(icon, size: 20, color: Colors.grey[700]),
-          const SizedBox(width: 8),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMessageCard({
-    required String name,
-    required String message,
-    required String time,
-    required bool unread,
-    required bool isSupport,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: isSupport ? Colors.blue.withOpacity(0.1) : Colors.purple.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              isSupport ? Icons.support_agent : Icons.person,
-              color: isSupport ? Colors.blue : Colors.purple,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      name,
-                      style: TextStyle(
-                        fontWeight: unread ? FontWeight.w600 : FontWeight.w500,
-                        fontSize: 15,
-                      ),
-                    ),
-                    Text(
-                      time,
-                      style: TextStyle(
-                        color: Colors.grey[500],
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  message,
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 13,
-                    fontWeight: unread ? FontWeight.w500 : FontWeight.normal,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-          if (unread)
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
             Container(
-              width: 8,
-              height: 8,
-              decoration: const BoxDecoration(
-                color: Colors.blue,
-                shape: BoxShape.circle,
+              height: 100,
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
+                ),
+                image: imageUrl.isNotEmpty
+                    ? DecorationImage(
+                        image: NetworkImage(imageUrl), // use your event image URL here
+                        fit: BoxFit.cover, // ensures the image covers the container
+                      )
+                    : null,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    category.toUpperCase(),
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white.withOpacity(0.9),
+                    ),
+                  ),
+                ],
               ),
             ),
-        ],
-      ),
-    );
-  }
+
+            // Details
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(description,
+                      style: TextStyle(
+                          fontSize: 14, color:isDark ? Colors.grey[300]: Colors.grey[700], height: 1.4)),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Icon(Icons.calendar_today,
+                          size: 16,color:isDark ? Colors.grey[300]: Colors.grey[700],),
+                      const SizedBox(width: 8),
+                      Text(_formatEventDate(eventDate),
+                          style: TextStyle(
+                              fontSize: 14, color:isDark ? Colors.grey[300]: Colors.grey[700],)),
+                      const SizedBox(width: 16),
+                      Icon(Icons.access_time,
+                          size: 16, color:isDark ? Colors.grey[300]: Colors.grey[700],),
+                      const SizedBox(width: 8),
+                      Text('$eventStartTime - $eventEndTime',
+                          style: TextStyle(
+                              fontSize: 14, color:isDark ? Colors.grey[300]: Colors.grey[700],)),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(Icons.location_on,
+                          size: 16,color:isDark ? Colors.grey[300]: Colors.grey[700],),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(location,
+                            style: TextStyle(
+                                fontSize: 14, color:isDark ? Colors.grey[300]: Colors.grey[700],)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Register / Registered button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: isRegistered
+                          ? null
+                          : () async {
+                              final userId = Supabase
+                                  .instance.client.auth.currentUser?.id;
+                              if (userId == null) return;
+
+                              final success =
+                                  await _eventService.registerForEvent(
+                                userId: userId,
+                                eventId: event['id'],
+                              );
+
+                              if (success) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                      content: Text(
+                                          '🎉 Registered successfully!')),
+                                );
+                                setState(() {}); // Refresh button state
+                              }
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isRegistered
+                            ? Colors.green[100]
+                            : eventColor,
+                        foregroundColor: isRegistered
+                            ? Colors.green[700]
+                            : Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: Text(
+                        isRegistered
+                            ? 'Registered'
+                            : 'Register for Event',
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    },
+  );
 }
 
-// UTILITIES TAB
-class UtilitiesTab extends StatelessWidget {
-  const UtilitiesTab({super.key});
 
-  @override
-  Widget build(BuildContext context) {
-    return CustomScrollView(
-      slivers: [
-        SliverPadding(
-          padding: const EdgeInsets.all(16),
-          sliver: SliverToBoxAdapter(
-            child: Column(
-              children: [
-                // Quick Actions Grid
-                GridView.count(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio: 1.2,
-                  children: [
-                    _buildUtilityCard(
-                      icon: Icons.request_quote,
-                      title: 'Refund Requests',
-                      color: Colors.orange,
-                      onTap: () {
-                        // Handle refund request
-                      },
-                    ),
-                    _buildUtilityCard(
-                      icon: Icons.receipt,
-                      title: 'Invoice Downloads',
-                      color: Colors.blue,
-                      onTap: () {
-                        // Handle invoice download
-                      },
-                    ),
-                    _buildUtilityCard(
-                      icon: Icons.help_center,
-                      title: 'Help Center',
-                      color: Colors.green,
-                      onTap: () {
-                        // Handle help center
-                      },
-                    ),
-                    _buildUtilityCard(
-                      icon: Icons.settings,
-                      title: 'Account Settings',
-                      color: Colors.purple,
-                      onTap: () {
-                        // Handle settings
-                      },
-                    ),
-                    _buildUtilityCard(
-                      icon: Icons.security,
-                      title: 'Privacy & Security',
-                      color: Colors.red,
-                      onTap: () {
-                        // Handle privacy
-                      },
-                    ),
-                    _buildUtilityCard(
-                      icon: Icons.contact_support,
-                      title: 'Contact Support',
-                      color: Colors.teal,
-                      onTap: () {
-                        // Handle contact support
-                      },
-                    ),
-                  ],
-                ),
-                
-                const SizedBox(height: 24),
-                
-                // Support Section
-                _buildSupportSection(),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+  /// Helper function to check if user is registered for event
+  Future<bool> _checkIfRegistered(String eventId) async {
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    if (userId == null) return false;
 
-  Widget _buildUtilityCard({
-    required IconData icon,
-    required String title,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return Card(
-      elevation: 0,
-      color: Colors.white,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, color: color, size: 24),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w500,
-                  fontSize: 13,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSupportSection() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Row(
-            children: [
-              Icon(Icons.help_outline, size: 20, color: Colors.blue),
-              SizedBox(width: 8),
-              Text(
-                'Need Help?',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Our support team is here to help you with any questions or issues you might have.',
-            style: TextStyle(
-              color: Colors.grey[600],
-              fontSize: 14,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () {
-                    // Contact support
-                  },
-                  icon: const Icon(Icons.chat, size: 18),
-                  label: const Text('Live Chat'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.blue,
-                    side: const BorderSide(color: Colors.blue),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    // Call support
-                  },
-                  icon: const Icon(Icons.phone, size: 18),
-                  label: const Text('Call Us'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
+    return await _eventService.isUserRegistered(userId: userId, eventId: eventId);
   }
 }

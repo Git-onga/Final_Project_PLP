@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../services/auth_service.dart';
+import '../../providers/theme_provider.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -47,14 +48,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Future<void> uploadProfileImage({
-      required BuildContext context,
-      required File imageFile,
-    }) async {
+    required BuildContext context,
+    required File imageFile,
+  }) async {
     try {
       final user = supabase.auth.currentUser;
       if (user == null) throw Exception("User not signed in");
 
-      // ✅ Limit image size to 2MB
       final fileSize = imageFile.lengthSync();
       if (fileSize > 2 * 1024 * 1024) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -63,29 +63,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         return;
       }
 
-      // ✅ Create unique file path
       final filePath = '${user.id}/profile_${DateTime.now().millisecondsSinceEpoch}.jpg';
-
-      // ✅ Upload to Supabase Storage
       await supabase.storage.from('avatars').upload(filePath, imageFile);
-
-      // ✅ Get the public URL
       final imageUrl = supabase.storage.from('avatars').getPublicUrl(filePath);
 
-      // ✅ Update user profile record
-      await supabase.from('profiles').update({
-        'avatar_url': imageUrl,
-      }).eq('id', user.id);
+      await supabase.from('profiles').update({'avatar_url': imageUrl}).eq('id', user.id);
 
-      // ✅ Also update auth user metadata
-      await supabase.auth.updateUser(UserAttributes(
-        data: {'avatar_url': imageUrl},
-      ));
+      await supabase.auth.updateUser(UserAttributes(data: {'avatar_url': imageUrl}));
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('✅ Profile image uploaded successfully!')),
       );
-
     } catch (error) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('❌ Upload failed: $error')),
@@ -100,9 +88,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
 
     if (pickedFile != null) {
-      setState(() {
-        _imageFile = File(pickedFile.path);
-      });
+      setState(() => _imageFile = File(pickedFile.path));
     }
   }
 
@@ -128,23 +114,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       final user = supabase.auth.currentUser;
       if (user == null) throw Exception('User not logged in.');
 
-      // ✅ Upload image if user picked one
       if (_imageFile != null) {
         await uploadProfileImage(context: context, imageFile: _imageFile!);
       }
 
-      // ✅ Update user metadata
       final updateResponse = await supabase.auth.updateUser(
-        UserAttributes(
-          data: {'name': newName, 'bio': newBio},
-        ),
+        UserAttributes(data: {'name': newName, 'bio': newBio}),
       );
 
-      if (updateResponse.user == null) {
-        throw Exception('Failed to update user profile');
-      }
+      if (updateResponse.user == null) throw Exception('Failed to update user profile');
 
-      // ✅ Update your profiles table (recommended)
       await supabase.from('profiles').upsert({
         'id': user.id,
         'name': newName,
@@ -155,7 +134,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       _nameController.clear();
       _bioController.clear();
       setState(() => _isSaving = false);
-
       authProvider.refreshUser();
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -179,30 +157,39 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
   }
 
-  Future<void> _loadUserProfile() async{
+  Future<void> _loadUserProfile() async {
     final authService = AuthService();
     final data = await authService.fetchUserProfile();
-
-    setState(() {
-      _profileImage = data?['avatar_url'] as String?;
-    });
-    
+    setState(() => _profileImage = data?['avatar_url'] as String?);
   }
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDarkMode = themeProvider.isDarkMode;
+
+    final backgroundColor = isDarkMode ? Colors.grey[900] : Colors.grey[50];
+    final cardGradient = isDarkMode
+        ? const [Color(0xFF1E1A33), Color(0xFF2C254A)]
+        : const [Color.fromARGB(255, 241, 238, 246), Color.fromARGB(255, 225, 230, 244)];
+
+    final textColor = isDarkMode ? Colors.grey[50] : Colors.grey[900];
+    final subTextColor = isDarkMode ? Colors.grey[400] : Colors.grey[700];
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Edit Profile', style: TextStyle(fontWeight: FontWeight.bold),),
+        title: const Text('Edit Profile', style: TextStyle(fontWeight: FontWeight.bold)),
         centerTitle: true,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        backgroundColor: backgroundColor,
+        foregroundColor: textColor,
+        elevation: 1,
       ),
-      backgroundColor: Colors.white,
+      backgroundColor: backgroundColor,
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20.0),
         child: Column(
           children: [
+            // Profile picture card
             Container(
               width: double.infinity,
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -211,90 +198,62 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 gradient: LinearGradient(
                   begin: Alignment.centerLeft,
                   end: Alignment.centerRight,
-                  colors: [
-                    const Color.fromARGB(255, 241, 238, 246),
-                    const Color.fromARGB(255, 225, 230, 244),
-                  ],
+                  colors: cardGradient,
                 ),
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
+                    color: Colors.black.withOpacity(isDarkMode ? 0.4 : 0.05),
                     blurRadius: 10,
                     offset: const Offset(0, 2),
                   ),
                 ],
               ),
-
               child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // Label under the picture
                   const Text(
                     'Profile Picture',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Color.fromARGB(255, 103, 103, 103),
-                    ),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.grey),
                   ),
-                  
                   const SizedBox(height: 8),
-
-                  // Profile Picture
-                  Center(
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        CircleAvatar(
-                          radius: 55,
-                          backgroundColor: Colors.grey[300],
-                          backgroundImage: _imageFile != null
-                              ? FileImage(_imageFile!) as ImageProvider
-                              : NetworkImage('$_profileImage'),
-                        ),
-
-                        // Camera button
-                        Positioned(
-                          bottom: 4,
-                          right: 4,
-                          child: GestureDetector(
-                            onTap: _pickImage,
-                            child: Container(
-                              padding: const EdgeInsets.all(6),
-                              decoration: BoxDecoration(
-                                color: const Color.fromARGB(255, 91, 144, 94),
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.2),
-                                    blurRadius: 4,
-                                    offset: const Offset(1, 2),
-                                  ),
-                                ],
-                              ),
-                              child: const Icon(
-                                Icons.camera_alt,
-                                color: Colors.white,
-                                size: 20,
-                              ),
+                  Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      CircleAvatar(
+                        radius: 55,
+                        backgroundColor: Colors.grey[300],
+                        backgroundImage: _imageFile != null
+                            ? FileImage(_imageFile!) as ImageProvider
+                            : NetworkImage('$_profileImage'),
+                      ),
+                      Positioned(
+                        bottom: 4,
+                        right: 4,
+                        child: GestureDetector(
+                          onTap: _pickImage,
+                          child: Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: const Color.fromARGB(255, 91, 144, 94),
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.2),
+                                  blurRadius: 4,
+                                  offset: const Offset(1, 2),
+                                ),
+                              ],
                             ),
+                            child: const Icon(Icons.camera_alt, color: Colors.white, size: 20),
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-
                   const SizedBox(height: 12),
-
-                  // Optional small instruction text (safe to remove)
                   Text(
                     'Tap the camera to update your picture',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 13, color: subTextColor),
                   ),
                 ],
               ),
@@ -302,28 +261,21 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
             const SizedBox(height: 25),
 
-            Container (
+            // Profile form card
+            Container(
               width: double.infinity,
               padding: const EdgeInsets.all(24),
               margin: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                    colors: /*_isDarkMode
-                      ? [
-                          const Color(0xFF1E1A33), // deep indigo-black
-                          const Color(0xFF2C254A), // dark lavender hue
-                        ]
-                      : */[
-                          const Color.fromARGB(255, 241, 238, 246),
-                          const Color.fromARGB(255, 225, 230, 244),
-                        ],
+                  end: Alignment.centerRight,
+                  colors: cardGradient,
                 ),
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
+                    color: Colors.black.withOpacity(isDarkMode ? 0.4 : 0.05),
                     blurRadius: 10,
                     offset: const Offset(0, 2),
                   ),
@@ -333,86 +285,55 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 children: [
                   TextField(
                     controller: _nameController,
-                    style: const TextStyle(color: Color.fromARGB(255, 103, 103, 103)),
+                    style: TextStyle(color: textColor),
                     decoration: InputDecoration(
                       labelText: 'Full Name',
-                      labelStyle: const TextStyle(color: Color.fromARGB(255, 103, 103, 103)),
-                      prefixIcon: Icon(Icons.person_outline, color: Color.fromARGB(255, 91, 144, 94)),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Colors.grey),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Colors.white54),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Colors.green,)
-                      ),
+                      labelStyle: TextStyle(color: subTextColor),
+                      prefixIcon: Icon(Icons.person_outline, color: Colors.green),
                       filled: true,
-                      fillColor: const Color.fromARGB(255, 210, 210, 210),
+                      fillColor: isDarkMode ? Colors.grey[800] : Colors.grey[200],
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                   ),
                   const SizedBox(height: 15),
-
-                  // Email (read-only)
                   TextField(
                     controller: _emailController,
                     readOnly: true,
-                    style: const TextStyle(color: Color.fromARGB(255, 103, 103, 103)),
+                    style: TextStyle(color: textColor),
                     decoration: InputDecoration(
                       labelText: 'Email',
-                      labelStyle: const TextStyle(color: Color.fromARGB(255, 103, 103, 103)),
-                      prefixIcon: const Icon(Icons.email_outlined, color: Color.fromARGB(255, 91, 144, 94)),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Colors.white54),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Colors.green),
-                      ),
+                      labelStyle: TextStyle(color: subTextColor),
+                      prefixIcon: Icon(Icons.email_outlined, color: Colors.green),
                       filled: true,
-                      fillColor: const Color.fromARGB(255, 210, 210, 210),
+                      fillColor: isDarkMode ? Colors.grey[800] : Colors.grey[200],
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                   ),
-                  
+                  const SizedBox(height: 15),
+                  TextField(
+                    controller: _bioController,
+                    style: TextStyle(color: textColor),
+                    decoration: InputDecoration(
+                      labelText: 'Bio',
+                      labelStyle: TextStyle(color: subTextColor),
+                      filled: true,
+                      fillColor: isDarkMode ? Colors.grey[800] : Colors.grey[200],
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
                   const SizedBox(height: 25),
-
-                  // Save button
                   SizedBox(
                     width: double.infinity,
                     height: 56,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            Color(0xFF764BA2),
-                            Color(0xFF667EEA) // soft teal green
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(20),
+                    child: ElevatedButton(
+                      onPressed: _saveProfile,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                       ),
-                      child: ElevatedButton(
-                        onPressed: () {
-                          _saveProfile();
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.transparent,
-                          shadowColor: Colors.transparent,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                        ),
-                        child: const Text(
-                          'Save Changes',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
+                      child: const Text(
+                        'Save Changes',
+                        style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),
@@ -420,7 +341,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               ),
             ),
           ],
-        ), 
+        ),
       ),
     );
   }

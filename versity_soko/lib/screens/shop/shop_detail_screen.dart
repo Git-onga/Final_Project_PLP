@@ -6,6 +6,8 @@ import '../../services/product_service.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../providers/cart_provider.dart';
 import 'package:provider/provider.dart';
+import '../../services/follower_services.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 
 class ShopDetailScreen extends StatefulWidget {
@@ -20,6 +22,10 @@ class ShopDetailScreen extends StatefulWidget {
 class _ShopDetailScreenState extends State<ShopDetailScreen> {
   final ShopProfileService _shopService = ShopProfileService();
   final ProductService _productService = ProductService();
+  final ShopFollowerService followerService = ShopFollowerService();
+  final String? userId = Supabase.instance.client.auth.currentUser?.id;
+
+
 
   ShopModel? _shop;
   List<Product> _products = [];
@@ -525,22 +531,123 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.blue[50],
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.blue[100]!),
-                      ),
-                      child: Text(
-                        _shop!.category ?? 'General Store',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.blue[700],
+                    Row(
+                      children: [
+                        // 🏷️ Shop Category Badge
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.blue[50],
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.blue[100]!),
+                          ),
+                          child: Text(
+                            _shop!.category ?? 'General Store',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.blue[700],
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
+
+                        const Spacer(),
+
+                        // 👇 Follow / Following Button
+                        FutureBuilder<bool>(
+                          future: followerService.isFollowing(
+                            userId: Supabase.instance.client.auth.currentUser?.id ?? '',
+                            shopId: _shop!.id,
+                          ),
+                          builder: (context, snapshot) {
+                            // Show shimmer or placeholder while loading
+                            if (!snapshot.hasData) {
+                              return Container(
+                                height: 36,
+                                width: 110,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[200],
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              );
+                            }
+
+                            final bool isFollowing = snapshot.data ?? false;
+                            final String? userId = Supabase.instance.client.auth.currentUser?.id;
+
+                            return ElevatedButton(
+                              onPressed: () async {
+                                if (userId == null) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('⚠️ Please log in to follow this shop.'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                  return;
+                                }
+
+                                bool success;
+                                if (isFollowing) {
+                                  // Unfollow
+                                  success = await followerService.unfollowShop(
+                                    userId: userId,
+                                    shopId: _shop!.id,
+                                  );
+                                  if (success) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('You unfollowed this shop.'),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  }
+                                } else {
+                                  // Follow
+                                  success = await followerService.addFollower(
+                                    userId: userId,
+                                    shopId: _shop!.id,
+                                  );
+                                  if (success) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('You are now following this shop!'),
+                                        backgroundColor: Colors.green,
+                                      ),
+                                    );
+                                  }
+                                }
+
+                                // Refresh button state
+                                setState(() {});
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: isFollowing ? Colors.green[50] : Colors.blue[600],
+                                foregroundColor: isFollowing ? Colors.green[700] : Colors.white,
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  side: isFollowing
+                                      ? BorderSide(color: Colors.green[200]!)
+                                      : BorderSide.none,
+                                ),
+                              ),
+                              child: Text(
+                                isFollowing ? 'Following Shop' : 'Follow Shop',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: isFollowing ? Colors.green[700] : Colors.white,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    )
+
+
+                    
                   ],
                 ),
               ),
@@ -737,7 +844,6 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
                         child: ElevatedButton(
                           onPressed: () {
                             final cartProvider = Provider.of<CartProvider>(context, listen: false);
-                              print('Item added to cart is: $product');
                               cartProvider.addToCart(product);
 
                               ScaffoldMessenger.of(context).showSnackBar(

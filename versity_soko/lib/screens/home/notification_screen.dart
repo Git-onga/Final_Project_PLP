@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../models/notification_model.dart';
 import '../../services/notification_service.dart';
+import '../../providers/notification_provider.dart';
 
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({super.key});
@@ -13,7 +15,8 @@ class _NotificationScreenState extends State<NotificationScreen> {
   List<NotificationModel> _notifications = [];
   NotificationFilter _currentFilter = NotificationFilter.all;
   bool _isLoading = false;
-  final NotificationService _notificationService = NotificationService();
+  late NotificationService _notificationService;
+    bool get isDark => Theme.of(context).brightness == Brightness.dark;
 
   @override
   void initState() {
@@ -21,16 +24,19 @@ class _NotificationScreenState extends State<NotificationScreen> {
     _loadNotifications();
   }
 
-  Future<void> _loadNotifications() async {
+   Future<void> _loadNotifications() async {
     setState(() => _isLoading = true);
-    try {
-      final fetchedNotifications = await _notificationService.fetchNotifications();
-      setState(() {
-        _notifications = fetchedNotifications;
-      });
-    } finally {
-      setState(() => _isLoading = false);
-    }
+
+    final notifications = await _notificationService.fetchNotifications();
+    setState(() {
+      _notifications = notifications;
+      _isLoading = false;
+    });
+
+    // Update provider for unread status
+    final unreadExists = notifications.any((n) => !n.isRead);
+    final notificationProvider = Provider.of<NotificationProvider>(context, listen: false);
+    notificationProvider.setUnread(unreadExists);
   }
 
   Future<void> _markAsRead(String notificationId) async {
@@ -89,7 +95,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
           'Notifications',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: isDark ? Colors.black : Colors.grey[50],
         elevation: 1,
         actions: [
           if (_notifications.isNotEmpty) ...[
@@ -123,7 +129,13 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
   Widget _buildFilterSection() {
     return Container(
-      color: Colors.white,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors:  isDark ? const [ Color(0xFF1E1A33),  Color(0xFF2C254A)]
+        : const [Color(0xFFF1EEF6), Color(0xFFE1E6F4)],
+        ),
+        borderRadius: BorderRadius.all(Radius.circular(8)),
+      ),
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
@@ -136,7 +148,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                 label: Text(
                   _getFilterLabel(filter),
                   style: TextStyle(
-                    color: isSelected ? Colors.white : Colors.grey[700],
+                    color: isSelected ? Colors.white : Colors.grey[300],
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -146,7 +158,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                     _currentFilter = filter;
                   });
                 },
-                backgroundColor: Colors.grey[100],
+                backgroundColor: isDark ? Colors.grey[600] : Colors.grey[100],
                 selectedColor: Colors.green,
                 checkmarkColor: Colors.white,
                 showCheckmark: true,
@@ -247,11 +259,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
         child: Container(
           decoration: BoxDecoration(
             gradient: notification.isRead
-                ? const LinearGradient(
-                    colors: [
-                      Color.fromARGB(255, 241, 238, 246),
-                      Color.fromARGB(255, 225, 230, 244),
-                    ],
+                ? LinearGradient(
+                    colors:  isDark ? const [const Color(0xFF1E1A33), const Color(0xFF2C254A)]
+        : const [Color(0xFFF1EEF6), Color(0xFFE1E6F4)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   )
@@ -294,7 +304,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                   ? FontWeight.w500
                                   : FontWeight.bold,
                               fontSize: 14,
-                              color: Colors.black87,
+                              color: isDark ? Colors.grey[300] : Colors.black87,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -316,7 +326,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                       notification.message,
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey[700],
+                        color: isDark ? Colors.grey[500] : Colors.grey[700],
                         height: 1.4,
                       ),
                       maxLines: 2,
